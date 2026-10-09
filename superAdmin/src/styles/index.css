@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+/* Keeps an element scrollable while hiding its scrollbar. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

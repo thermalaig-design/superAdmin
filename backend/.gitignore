@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Environment variables and secrets (Supabase keys, JWT secret, SMS/payment keys)
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Runtime / tooling
+.DS_Store
+Thumbs.db
+coverage/
+.vscode/
+.idea/
