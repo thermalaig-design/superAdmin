@@ -7,20 +7,21 @@ const TOP_ROUTES = 7;
 const RECENT_LIMIT = 100;
 
 const ACTIVITY_SELECT =
-    'id, created_at, page_id, user_reg_id, members_id, ' +
+    'id, created_at, trust_id, page_id, user_reg_id, members_id, ' +
     'page:page_routes(name, route, module), ' +
     'user:users_reg(name), ' +
     'member:Members!page_activity_member_fk(Name)';
 
 // Supabase caps each response (default 1000 rows), so page through the period.
-async function fetchPeriodActivity(trustId, start, end) {
+// `match` is the column filter, e.g. { trust_id } or { members_id, trust_id }.
+export async function fetchPeriodActivity(match, start, end) {
     const rows = [];
 
     for (let from = 0; from < MAX_ROWS; from += PAGE_SIZE) {
         const { data, error } = await supabase
             .from('page_activity')
             .select(ACTIVITY_SELECT)
-            .eq('trust_id', trustId)
+            .match(match)
             .gte('created_at', start)
             .lt('created_at', end)
             .order('created_at', { ascending: false })
@@ -38,14 +39,14 @@ async function fetchPeriodActivity(trustId, start, end) {
 const userKey = (row) => row.user_reg_id ?? row.members_id ?? null;
 const userName = (row) => row.user?.name ?? row.member?.Name ?? 'Unknown user';
 
-function parseTarget(target) {
+export function parseTarget(target) {
     if (typeof target !== 'string') return {};
     if (target.startsWith('module:')) return { module: target.slice(7) };
     if (target.startsWith('page:')) return { pageId: target.slice(5) };
     return {};
 }
 
-function buildFilterOptions(rows) {
+export function buildFilterOptions(rows) {
     const users = new Map();
     const modules = new Set();
     const pages = new Map();
@@ -76,7 +77,7 @@ function countBy(rows, keyOf) {
     return counts;
 }
 
-function buildReport(rows, { firstDay, lastDay }) {
+export function buildReport(rows, { firstDay, lastDay }) {
     const total = rows.length;
     const perDay = countBy(rows, (r) => localDayKey(r.created_at));
     const activeDays = perDay.size;
@@ -110,6 +111,7 @@ function buildReport(rows, { firstDay, lastDay }) {
         byHour: hourCounts.map((count, hour) => ({ hour, count })),
         recent: rows.slice(0, RECENT_LIMIT).map((row) => ({
             id: row.id,
+            trustId: row.trust_id,
             createdAt: row.created_at,
             user: userName(row),
             pageName: row.page?.name ?? '—',
@@ -129,7 +131,7 @@ export async function getTrustActivity(trustId, range, { user, target }) {
     if (error) throw error;
     if (!trust) return null;
 
-    const periodRows = await fetchPeriodActivity(trustId, range.start, range.end);
+    const periodRows = await fetchPeriodActivity({ trust_id: trustId }, range.start, range.end);
 
     const { module, pageId } = parseTarget(target);
     const rows = periodRows.filter(

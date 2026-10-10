@@ -1,5 +1,6 @@
 import { supabase } from '../../config/supabase.js';
 import { getCalendarPeriodStarts } from '../../utils/dateRange.js';
+import { countActiveTrusts } from '../member-insights/memberInsights.service.js';
 
 const PAGE_SIZE = 1000;
 const MAX_ROWS = 100000;
@@ -114,6 +115,8 @@ export async function getTrustMemberLogins(trustId) {
     const needsProfile = loggedIn.filter((m) => !m.name || !m.mobile).map((m) => m.memberId);
     const profiles = needsProfile.length ? await fetchMemberProfiles(needsProfile) : new Map();
 
+    const trustCounts = await countActiveTrusts(loggedIn.map((m) => m.memberId));
+
     const members = loggedIn.map((m) => {
         const profile = profiles.get(m.memberId);
 
@@ -122,6 +125,7 @@ export async function getTrustMemberLogins(trustId) {
             name: m.name ?? profile?.name ?? null,
             mobile: m.mobile ?? profile?.mobile ?? null,
             appPlatform: m.appPlatform,
+            trustCount: trustCounts.get(m.memberId) ?? 0,
             actionType: m.latest.action_type,
             actionAt: m.latest.action_at,
             actions: m.actions,
