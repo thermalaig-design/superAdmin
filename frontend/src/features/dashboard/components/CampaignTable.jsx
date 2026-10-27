@@ -111,7 +111,7 @@ function Count({ value, to, title }) {
 }
 
 /** `pathFor(stage)` is the page listing the people behind a number; every number opens exactly the people (or leads) it counts. */
-function Figures({ row, pathFor }) {
+function Figures({ row, pathFor, peoplePath }) {
   const leadsTo = pathFor();
   const notLoggedIn = Math.max(row.leads - row.loggedIn, 0); // leads who never logged in
   const noApp = Math.max(row.loggedIn - row.creators, 0); // logged in but did not create an app
@@ -130,7 +130,7 @@ function Figures({ row, pathFor }) {
         <Count value={notLoggedIn} to={pathFor('notLoggedIn')} title="See the leads who never logged in" />
       </td>
       <td className="whitespace-nowrap px-3 py-3 tabular-nums text-(--c-text-2)">
-        <Count value={row.creators} to={pathFor('app')} title={`See the people who created an app (${number(row.apps)} app${row.apps === 1 ? '' : 's'} in total)`} />
+        <Count value={row.creators} to={peoplePath('app')} title={`See the people who created an app (${number(row.apps)} app${row.apps === 1 ? '' : 's'} in total)`} />
         {slash}
         <Count value={noApp} to={pathFor('noApp')} title="See the people who logged in but have not created an app" />
       </td>
@@ -150,7 +150,7 @@ function Figures({ row, pathFor }) {
 }
 
 /** Sub-rows of a campaign; `field` ('platform' | 'adSet') narrows the lead page opened from a row's Leads number. */
-function SubRows({ title, rows, leadsPath, field, iconLabel }) {
+function SubRows({ title, rows, leadsPath, peoplePath, field, iconLabel }) {
   if (rows.length === 0) return null;
   return (
     <>
@@ -167,7 +167,7 @@ function SubRows({ title, rows, leadsPath, field, iconLabel }) {
               <span className="font-semibold text-(--c-text-2)">{row.label}</span>
             </div>
           </td>
-          <Figures row={row} pathFor={(stage) => leadsPath({ [field]: row.label, ...(stage && { stage }) })} />
+          <Figures row={row} pathFor={(stage) => leadsPath({ [field]: row.label, ...(stage && { stage }) })} peoplePath={(stage) => peoplePath({ [field]: row.label, stage })} />
         </tr>
       ))}
     </>
@@ -188,7 +188,8 @@ function CampaignTable({ campaigns, scope, control, filter, sourceKey, embedded 
     });
 
   // The page listing the leads behind a row: this campaign (optionally one platform / ad set), for the period shown here.
-  const leadsPath = (campaign, extra = {}) => {
+  // `base` is the lead list (/campaign-leads), or the registrations page for the numbers that count people with an app.
+  const pathTo = (base, campaign, extra = {}) => {
     const channels = campaigns?.find((item) => item.label === campaign)?.channels; // tells the lead page which platform filters make sense
     const params = new URLSearchParams({ campaign, ...(sourceKey && { source: sourceKey }), ...(channels?.length && { channels: channels.join(',') }), ...extra });
     if (filter?.range) params.set('range', filter.range);
@@ -196,8 +197,10 @@ function CampaignTable({ campaigns, scope, control, filter, sourceKey, embedded 
       if (filter.from) params.set('from', filter.from);
       if (filter.to) params.set('to', filter.to);
     }
-    return `/campaign-leads?${params}`;
+    return `${base}?${params}`;
   };
+  const leadsPath = (campaign, extra) => pathTo('/campaign-leads', campaign, extra);
+  const peoplePath = (campaign, extra) => pathTo('/registrations', campaign, extra);
 
   return (
     <section className={embedded ? '' : 'rounded-2xl border border-gray-200 bg-white p-5 shadow-[0_1px_3px_rgba(20,33,61,0.06)]'}>
@@ -277,12 +280,12 @@ function CampaignTable({ campaigns, scope, control, filter, sourceKey, embedded 
                           )}
                         </div>
                       </td>
-                      <Figures row={campaign} pathFor={(stage) => leadsPath(campaign.label, stage ? { stage } : {})} />
+                      <Figures row={campaign} pathFor={(stage) => leadsPath(campaign.label, stage ? { stage } : {})} peoplePath={(stage) => peoplePath(campaign.label, { stage })} />
                     </tr>
                     {isOpen && (
                       <>
-                        <SubRows title={whatsapp ? 'By sub source' : 'By platform'} rows={campaign.platforms} leadsPath={(extra) => leadsPath(campaign.label, extra)} field="platform" iconLabel={whatsapp ? 'WhatsApp' : undefined} />
-                        <SubRows title="By ad set" rows={campaign.adSets} leadsPath={(extra) => leadsPath(campaign.label, extra)} field="adSet" />
+                        <SubRows title={whatsapp ? 'By sub source' : 'By platform'} rows={campaign.platforms} leadsPath={(extra) => leadsPath(campaign.label, extra)} peoplePath={(extra) => peoplePath(campaign.label, extra)} field="platform" iconLabel={whatsapp ? 'WhatsApp' : undefined} />
+                        <SubRows title="By ad set" rows={campaign.adSets} leadsPath={(extra) => leadsPath(campaign.label, extra)} peoplePath={(extra) => peoplePath(campaign.label, extra)} field="adSet" />
                       </>
                     )}
                   </Fragment>

@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { logout } from '../../features/auth/services/authService';
+import { useTargetsView } from '../../features/targets/hooks/useTargetsView';
 import Logo from '../Logo';
 import { DashboardIcon, InsightsIcon, LogoutIcon, MarketingIcon, MembersIcon, SidebarToggleIcon, TargetIcon } from './icons';
 
@@ -9,6 +10,7 @@ const NAV_ITEMS = [
   { to: '/organization-insights', also: ['/trust-insights'], label: 'Organization Insights', icon: InsightsIcon },
   { to: '/member-insights', label: 'Member Insights', icon: MembersIcon },
   { to: '/marketing', label: 'Marketing', icon: MarketingIcon },
+  { to: '/app-templates', label: 'App Template', icon: DashboardIcon },
   { to: '/targets', label: 'Targets', icon: TargetIcon }, // also highlighted on /targets/set-target
 ];
 
@@ -33,6 +35,7 @@ const linkClass = (collapsed, isActive) =>
 function Sidebar({ open, onClose, collapsed = false, onToggle }) {
   const navigate = useNavigate();
   const { pathname, state } = useLocation();
+  const [, setTargetsView] = useTargetsView();
 
   const handleLogout = () => {
     logout();
@@ -88,7 +91,10 @@ function Sidebar({ open, onClose, collapsed = false, onToggle }) {
                 to={to}
                 aria-current={active ? 'page' : undefined}
                 className={linkClass(collapsed, active)}
-                onClick={onClose}
+                onClick={() => {
+                  if (to === '/targets') setTargetsView({ platform: null, status: null }); // Targets opens on all platforms, not the last one picked
+                  onClose();
+                }}
                 title={collapsed ? label : undefined}
               >
                 <Icon />

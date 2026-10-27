@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 
 import { niceMax, smoothPath } from '../utils/chartMath';
+import LoadingBar from './LoadingBar';
 
 const PAD = { top: 10, right: 24, bottom: 26, left: 30 };
 const DOTS_UNTIL = 31; // draw a dot on every point only while the line is not crowded
@@ -66,6 +67,7 @@ function AreaChart({ title, series, loading, noun, nounPlural = `${noun}s`, empt
       <h3 className="truncate text-sm font-semibold">{title}</h3>
 
       <div ref={wrapRef} className={`relative mt-3 min-w-0 flex-1 overflow-hidden transition-opacity ${loading && n > 0 ? 'opacity-60' : ''}`} style={{ minHeight: height }}>
+        <LoadingBar active={loading && n > 0} className="absolute inset-0 z-10" />
         {n === 0 ? (
           <div className="h-full animate-pulse rounded-xl bg-gray-50" style={{ minHeight: height }} />
         ) : (

@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 
-import { AppsIcon, CampaignIcon, ChevronDownIcon, JourneyIcon, SourcesIcon } from '../components/sidebar/icons';
+import { AppsIcon, CampaignIcon, ChartIcon, ChevronDownIcon, SourcesIcon } from '../components/sidebar/icons';
 import SourceIcon from '../features/dashboard/components/SourceIcon';
 import { SOURCES, sourceByKey } from '../features/dashboard/utils/sources';
 
 const REPORT_ITEMS = [
   { id: 'sources', label: 'Lead Sources', icon: SourcesIcon },
-  { id: 'journey', label: 'Client Journey', icon: JourneyIcon },
   { id: 'campaigns', label: 'Campaigns', icon: CampaignIcon },
   { id: 'apps', label: 'Active Apps', icon: AppsIcon },
+  { id: 'growth', label: 'Growth', icon: ChartIcon },
 ];
 const SUB_OPTIONS = [{ key: null, short: 'All sources', color: 'var(--c-accent)' }, ...SOURCES];
 

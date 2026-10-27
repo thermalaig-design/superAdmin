@@ -417,14 +417,8 @@ const stageOf = (person) => {
     return person.apps.some((app) => app.active) ? 'active' : 'app';
 };
 
-/**
- * One page of the leads behind a campaign row (newest first, or oldest first with sort 'asc'), for the dashboard's lead list. The leads are narrowed by
- * campaign (and optionally ad source, platform, ad set) and by a search on name / mobile number; only the leads on the
- * requested page are followed through the funnel, so a campaign with thousands of leads stays cheap.
- * `stage` keeps only the people counted in that column of the campaign table and adds summary { people, apps }.
- * Returns { total, summary, page, pageSize, leads: [{ id, name, mobile, channel, adSet, receivedAt, stage }] }.
- */
-export async function getCampaignLeads({ start, end }, { campaign, source, platform, adSet, search, page, pageSize, sort, stage }) {
+/** Every lead received in the period (ad leads plus organic / WhatsApp / unknown members, who count as leads when they joined), newest first; `source` narrows which are read. */
+async function fetchPeriodLeads({ start, end }, source) {
     const all = [];
     for (let from = 0; from < LEAD_MAX_ROWS; from += LEAD_PAGE_SIZE) {
         const { data } = unwrap(
@@ -500,12 +494,32 @@ export async function getCampaignLeads({ start, end }, { campaign, source, platf
         }
         all.sort((a, b) => receivedAt(b) - receivedAt(a));
     }
+    return all;
+}
+
+/** The campaigns that brought leads in the period (optionally from one source), busiest first: [{ label, leads }]. */
+export async function getCampaignOptions(range, source) {
+    const leads = (await fetchPeriodLeads(range, source)).filter((lead) => !source || sourceOf(lead) === source);
+    const counts = new Map();
+    leads.forEach((lead) => counts.set(campaignOf(lead), (counts.get(campaignOf(lead)) ?? 0) + 1));
+    return [...counts].map(([label, count]) => ({ label, leads: count })).sort((a, b) => b.leads - a.leads);
+}
+
+/**
+ * One page of the leads behind a campaign row (newest first, or oldest first with sort 'asc'), for the dashboard's lead list. The leads are narrowed by
+ * campaign (and optionally ad source, platform, ad set) and by a search on name / mobile number; only the leads on the
+ * requested page are followed through the funnel, so a campaign with thousands of leads stays cheap.
+ * `stage` keeps only the people counted in that column of the campaign table and adds summary { people, apps }.
+ * Returns { total, summary, page, pageSize, leads: [{ id, name, mobile, channel, adSet, receivedAt, stage }] }.
+ */
+export async function getCampaignLeads({ start, end }, { campaign, source, platform, adSet, search, page, pageSize, sort, stage }) {
+    const all = await fetchPeriodLeads({ start, end }, source);
 
     const needle = search?.trim().toLowerCase();
     const digits = needle?.replace(/\D/g, '');
     let matching = all.filter(
         (lead) =>
-            campaignOf(lead) === campaign &&
+            (!campaign || campaignOf(lead) === campaign) &&
             (!source || sourceOf(lead) === source) &&
             (!platform || leadChannel(lead) === platform) &&
             (!adSet || adSetOf(lead) === adSet) &&

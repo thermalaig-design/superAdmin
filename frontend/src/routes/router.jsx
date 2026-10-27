@@ -83,7 +83,11 @@ const TrustMemberActionsPage = lazy(() =>
   import('../features/trust-insights/pages/TrustMemberActionsPage')
 );
 
-const lazyPage = (Component) => (
+const AppTemplatesPage = lazy(() =>
+  import('../features/app-templates/pages/AppTemplatesPage')
+);
+
+const lazyPage =(Component) => (
   <Suspense fallback={<div>Loading...</div>}>
     <Component />
   </Suspense>
@@ -147,6 +151,10 @@ export const router = createBrowserRouter([
           {
             path: '/marketing',
             element: lazyPage(MarketingPage),
+          },
+          {
+            path: '/app-templates',
+            element: lazyPage(AppTemplatesPage),
           },
           {
             path: '/registrations',

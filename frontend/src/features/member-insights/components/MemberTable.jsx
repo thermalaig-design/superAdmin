@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 import SortableTh, { HeadCell } from '../../../components/SortableTh';
+import LoadingBar from '../../../components/LoadingBar';
 import { useDragScroll } from '../../../hooks/useDragScroll';
 import { MEMBER_COLUMNS } from '../utils/memberColumns';
 import { periodQuery } from '../utils/periodQuery';
@@ -21,9 +22,11 @@ function MemberTable({ members, loading, sort, onSort, filtered, pinned = false,
     scrollRef.current?.scrollTo({ top: 0 });
   }, [scrollRef, scrollResetKey]);
 
+  // The header stays fixed inside the box. Scrollbars are hidden, so a mouse can also drag the table
+  // to pan it; wheel, trackpad and touch work as usual.
   return (
-    // The header stays fixed inside the box. Scrollbars are hidden, so a mouse can also drag the table
-    // to pan it; wheel, trackpad and touch work as usual.
+    <>
+    <LoadingBar active={loading && members.length > 0} className="fixed inset-0 z-30" />
     <div
       ref={scrollRef}
       className={`scrollbar-none max-h-[70vh] cursor-grab overflow-auto rounded-xl border border-gray-200 transition-opacity lg:max-h-none lg:min-h-0 lg:flex-1 ${
@@ -72,6 +75,7 @@ function MemberTable({ members, loading, sort, onSort, filtered, pinned = false,
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 

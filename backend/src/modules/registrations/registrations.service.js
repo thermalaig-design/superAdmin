@@ -1,11 +1,12 @@
 import { supabase } from '../../config/supabase.js';
 import { getActionStats, getAppStats } from '../member-insights/memberInsights.service.js';
-import { summariseFunnel, traceLeadPeople } from '../marketing/leadStats.service.js';
+import { getCampaignLeads, summariseFunnel, traceLeadPeople } from '../marketing/leadStats.service.js';
 
 const ACTIVITY_LIMIT = 5000; // rows read per source, so the per-page counts cover everything the person did
 const TIMELINE_EVENTS = 300; // newest steps listed in the timeline
 const TOP_PAGES = 12; // busiest pages listed per app
 const ID_CHUNK = 100;
+const CAMPAIGN_PEOPLE_MAX = 20000; // leads read for one campaign number
 const PARALLEL = 6;
 
 const unwrap = ({ data, count, error }) => {
@@ -86,6 +87,37 @@ export async function getRegistrationSummary(range) {
     };
 }
 
+/** The list rows for these members: whether they logged in, how many apps they built and how much they did. */
+async function describeMembers(members) {
+    const ids = members.map((m) => m.members_id);
+
+    const logins = new Map(); // member id -> { count, firstAt }
+    if (ids.length) {
+        unwrap(
+            await supabase.from('member_session').select('members_id, action_at').in('members_id', ids).eq('action_type', 'login').order('action_at', { ascending: true }).limit(5000)
+        ).data.forEach((row) => {
+            const entry = logins.get(row.members_id) ?? { count: 0, firstAt: row.action_at };
+            entry.count += 1;
+            logins.set(row.members_id, entry);
+        });
+    }
+    const [apps, actions, panel] = await Promise.all([getAppStats(ids), getActionStats(ids), getPanelActionCounts(ids)]);
+
+    return members.map((m) => ({
+        id: m.members_id,
+        name: clean(m.Name),
+        mobile: m.Mobile != null ? String(m.Mobile) : null,
+        source: clean(m.source),
+        registeredAt: m.created_at,
+        loggedIn: logins.has(m.members_id),
+        loginCount: logins.get(m.members_id)?.count ?? 0,
+        firstLoginAt: logins.get(m.members_id)?.firstAt ?? null,
+        appCount: apps.get(m.members_id)?.count ?? 0,
+        appNames: apps.get(m.members_id)?.names ?? [],
+        actionCount: (actions.get(m.members_id)?.count ?? 0) + (panel.get(m.members_id) ?? 0),
+    }));
+}
+
 /**
  * One page of the people who registered in the period (Members.created_at), newest first, each with how far they got:
  * logged in -> created an app -> actions taken. Searchable by name or mobile number.
@@ -104,38 +136,31 @@ export async function getRegistrations({ start, end }, { search, page, pageSize 
     }
 
     const { data: members, count } = unwrap(await query.order('created_at', { ascending: false }).range((page - 1) * pageSize, page * pageSize - 1));
-    const ids = members.map((m) => m.members_id);
-
-    const logins = new Map(); // member id -> { count, firstAt }
-    if (ids.length) {
-        unwrap(
-            await supabase.from('member_session').select('members_id, action_at').in('members_id', ids).eq('action_type', 'login').order('action_at', { ascending: true }).limit(5000)
-        ).data.forEach((row) => {
-            const entry = logins.get(row.members_id) ?? { count: 0, firstAt: row.action_at };
-            entry.count += 1;
-            logins.set(row.members_id, entry);
-        });
-    }
-    const [apps, actions, panel] = await Promise.all([getAppStats(ids), getActionStats(ids), getPanelActionCounts(ids)]);
-
     return {
         period: { from: start, to: end },
         total: count ?? 0,
         page,
         pageSize,
-        registrations: members.map((m) => ({
-            id: m.members_id,
-            name: clean(m.Name),
-            mobile: m.Mobile != null ? String(m.Mobile) : null,
-            source: clean(m.source),
-            registeredAt: m.created_at,
-            loggedIn: logins.has(m.members_id),
-            loginCount: logins.get(m.members_id)?.count ?? 0,
-            firstLoginAt: logins.get(m.members_id)?.firstAt ?? null,
-            appCount: apps.get(m.members_id)?.count ?? 0,
-            actionCount: (actions.get(m.members_id)?.count ?? 0) + (panel.get(m.members_id) ?? 0),
-        })),
+        registrations: await describeMembers(members),
     };
+}
+
+/**
+ * The people behind one number of the dashboard's campaign table (e.g. the people who created an app from a campaign),
+ * as registration rows, newest lead first. `filters` is { campaign, source, platform, adSet, stage }.
+ */
+export async function getCampaignRegistrations(range, filters, { search, page, pageSize }) {
+    const leads = await getCampaignLeads(range, { ...filters, search, page: 1, pageSize: CAMPAIGN_PEOPLE_MAX, sort: 'desc' });
+    const memberIds = [...new Set(leads.leads.map((lead) => lead.memberId).filter(Boolean))];
+    const pageIds = memberIds.slice((page - 1) * pageSize, page * pageSize);
+
+    let members = [];
+    if (pageIds.length) {
+        members = unwrap(await supabase.from('Members').select('members_id, Name, Mobile, source, created_at').in('members_id', pageIds)).data;
+        members.sort((a, b) => pageIds.indexOf(a.members_id) - pageIds.indexOf(b.members_id));
+    }
+
+    return { period: { from: range.start, to: range.end }, total: memberIds.length, page, pageSize, registrations: await describeMembers(members) };
 }
 
 /**

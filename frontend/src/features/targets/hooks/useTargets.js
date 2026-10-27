@@ -23,7 +23,8 @@ const AD_SET_DEFAULTS = {
     'google-app-display': { target: 40, dailyBudget: 300, minApps: 15, alerts: 'both' },
   },
   'meta-app-promotion': {
-    'meta-prospecting': { target: 140, dailyBudget: 500, minApps: 15, alerts: 'both' },
+    'meta-facebook': { target: 140, dailyBudget: 300, minApps: 15, alerts: 'both' },
+    'meta-instagram': { target: 140, dailyBudget: 200, minApps: 15, alerts: 'both' },
   },
   'google-lead-form': {
     'google-lead-search': { target: 140, dailyBudget: 140, minApps: 1, alerts: 'both' },

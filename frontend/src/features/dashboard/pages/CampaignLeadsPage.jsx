@@ -241,7 +241,7 @@ function CampaignLeadsPage() {
               </div>
             </div>
 
-            <ScrollTable className="mt-4">
+            <ScrollTable className="mt-4" busy={loading && !!data}>
               <table className="w-full min-w-[820px] text-sm">
                 <thead>
                   <tr>

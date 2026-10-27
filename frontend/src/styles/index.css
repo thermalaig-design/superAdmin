@@ -151,6 +151,8 @@ body {
   --animate-page: page-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-reveal: reveal 0.3s ease-out both;
   --animate-pop: pop 0.18s ease-out both;
+  --animate-dot-fade: dot-fade 1s linear infinite;
+  --animate-float: float 7s ease-in-out infinite;
   --animate-grow: grow 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
 
   @keyframes page-in {
@@ -164,6 +166,14 @@ body {
   @keyframes pop {
     from { opacity: 0; transform: translateY(-6px) scale(0.97); }
     to { opacity: 1; transform: none; }
+  }
+  @keyframes dot-fade {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0.15; transform: scale(0.7); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-14px) scale(1.06); }
   }
   @keyframes grow {
     from { transform: scaleX(0); }

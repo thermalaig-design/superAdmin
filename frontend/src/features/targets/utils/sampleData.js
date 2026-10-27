@@ -16,7 +16,8 @@ export const CAMPAIGNS = [
     { id: 'google-app-display', name: 'App Install · Display' },
   ] },
   { id: 'meta-app-promotion', name: 'Meta App Promotion', platform: 'Meta', test: false, adSets: [
-    { id: 'meta-prospecting', name: 'App Install · Broad Audience' },
+    { id: 'meta-facebook', name: 'Facebook' },
+    { id: 'meta-instagram', name: 'Instagram' },
   ] },
   { id: 'google-lead-form', name: 'Google Lead Form', platform: 'Google', test: false, adSets: [
     { id: 'google-lead-search', name: 'Lead Form · Search' },
@@ -30,7 +31,8 @@ const LAST_7_DAYS = {
     { id: 'google-app-display', spend: 2800, installs: 450, registrations: 240, logins: 200, apps: 65 },
   ] },
   'meta-app-promotion': { spend: 3500, installs: 140, registrations: 92, logins: 75, apps: 26, adSets: [
-    { id: 'meta-prospecting', spend: 3500, installs: 140, registrations: 92, logins: 75, apps: 26 },
+    { id: 'meta-facebook', spend: 2100, installs: 84, registrations: 55, logins: 45, apps: 16 },
+    { id: 'meta-instagram', spend: 1400, installs: 56, registrations: 37, logins: 30, apps: 10 },
   ] },
   'google-lead-form': { spend: 1000, installs: null, registrations: 10, logins: 8, apps: 2, adSets: [
     { id: 'google-lead-search', spend: 1000, installs: null, registrations: 10, logins: 8, apps: 2 },

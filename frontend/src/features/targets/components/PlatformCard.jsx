@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 
 import SourceIcon from '../../dashboard/components/SourceIcon';
 import { COLORS } from '../../marketing/utils/leadStats';
+import { useEditPath } from '../hooks/useEditPath';
+import { useTargetsView } from '../hooks/useTargetsView';
 import { money, STATUS } from '../utils/targetMath';
 
 const SEGMENTS = ['green', 'yellow', 'red'];
@@ -27,6 +29,8 @@ export function PlatformTile({ platform, className = 'h-9 w-9' }) {
  * current cost (pinned to the right edge when it is off the bar).
  */
 function PlatformCard({ row, selected, onSelect }) {
+  const [, setView] = useTargetsView();
+  const editPath = useEditPath();
   const [hover, setHover] = useState(null); // index of the colour under the pointer
   const { target, costPerApp, status } = row;
   const max = target * 3;
@@ -68,8 +72,11 @@ function PlatformCard({ row, selected, onSelect }) {
           </button>
         </div>
         <Link
-          to={`/targets/set-target/${row.id}`}
-          onClick={(event) => event.stopPropagation()}
+          to={editPath(row)}
+          onClick={(event) => {
+            event.stopPropagation();
+            setView({ platform: row.platform });
+          }}
           className="shrink-0 rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-semibold text-(--c-link) opacity-70 transition hover:bg-(--c-accent-soft) group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-accent)"
         >
           Edit target

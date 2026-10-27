@@ -112,7 +112,7 @@ async function fetchOwnedTrusts(superuserIds, columns) {
  * this runs for the members on the page only.
  */
 export async function getAppStats(memberIds) {
-    const stats = new Map(memberIds.map((id) => [id, { count: 0, lastCreatedAt: null }]));
+    const stats = new Map(memberIds.map((id) => [id, { count: 0, lastCreatedAt: null, names: [] }]));
     if (memberIds.length === 0) return stats;
 
     const owners = new Map(); // superuser id -> member id
@@ -121,10 +121,11 @@ export async function getAppStats(memberIds) {
         data.forEach((row) => owners.set(row.id, row.members_id));
     }
 
-    const trusts = await fetchOwnedTrusts([...owners.keys()], 'id, superuser_id, created_at');
+    const trusts = await fetchOwnedTrusts([...owners.keys()], 'id, name, superuser_id, created_at');
     trusts.forEach((trust) => {
         const entry = stats.get(owners.get(trust.superuser_id));
         entry.count += 1;
+        if (trust.name) entry.names.push(trust.name);
         if (trust.created_at && (!entry.lastCreatedAt || trust.created_at > entry.lastCreatedAt)) entry.lastCreatedAt = trust.created_at;
     });
 

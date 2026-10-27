@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 import { CampaignIcon, InsightsIcon, MembersIcon, TargetIcon } from '../../../components/sidebar/icons';
+import { useTargetCampaigns } from '../hooks/useTargetCampaigns';
 import { useTargetsView } from '../hooks/useTargetsView';
 import { CAMPAIGNS, PERIODS } from '../utils/sampleData';
 import { STATUS } from '../utils/targetMath';
@@ -44,18 +46,51 @@ function PlatformLinks({ onPick }) {
 
 /** Every campaign, each opening its own place: a scorecard row, or its target form. */
 function CampaignLinks({ base, allLabel, allTo, onPick }) {
+  const [view, setView] = useTargetsView();
   const { campaignId } = useParams();
   const { pathname } = useLocation();
   const inSettings = pathname.startsWith('/targets/set-target');
   const onThisSection = base === '/targets' ? !inSettings : inSettings;
+  const { data: running } = useTargetCampaigns(); // real campaigns, for the Set Targets menu
+  const list = base === '/targets' ? CAMPAIGNS : (running ?? []);
   return (
     <>
-      <Link to={allTo} onClick={onPick} className={item(onThisSection && !campaignId)}>
+      <p className={heading}>Platform</p>
+      {[null, 'Meta', 'Google'].map((platform) => (
+        <Link
+          key={platform ?? 'all'}
+          to={allTo}
+          onClick={() => {
+            setView({ platform });
+            onPick();
+          }}
+          className={item(view.platform === platform)}
+        >
+          {platform ? <PlatformTile platform={platform} className="h-5 w-5 rounded-md [&_svg]:h-3.5 [&_svg]:w-3.5" /> : <span className="h-5 w-5" />}
+          {platform ?? 'All platforms'}
+        </Link>
+      ))}
+      <p className={heading}>Campaign</p>
+      <Link
+        to={allTo}
+        onClick={() => {
+          setView({ platform: null });
+          onPick();
+        }}
+        className={item(onThisSection && !campaignId)}
+      >
         <span className="h-5 w-5" />
         {allLabel}
       </Link>
-      {CAMPAIGNS.map((campaign) => (
-        <Link key={campaign.id} to={`${base}/${campaign.id}`} onClick={onPick} className={item(onThisSection && campaignId === campaign.id)}>
+      {list.map((campaign) => (
+        <Link
+          key={campaign.id}
+          to={`${base}/${campaign.id}`}
+          onClick={() => {
+            setView({ platform: campaign.platform });
+            onPick();
+          }}
+          className={item(onThisSection && campaignId === campaign.id)}>
           <PlatformTile platform={campaign.platform} className="h-5 w-5 rounded-md [&_svg]:h-3.5 [&_svg]:w-3.5" />
           <span className="truncate">{campaign.name}</span>
         </Link>
@@ -64,10 +99,22 @@ function CampaignLinks({ base, allLabel, allTo, onPick }) {
   );
 }
 
+/** A menu icon that turns into the chosen platform's logo (Meta / Google) once one is picked, so every menu shows what is filtered. */
+const withPlatformLogo = (Icon) =>
+  function MenuIcon() {
+    const [view] = useTargetsView();
+    return view.platform ? <PlatformTile platform={view.platform} className="h-6 w-6 rounded-md [&_svg]:h-4 [&_svg]:w-4" /> : <Icon />;
+  };
+
+const PlatformIcon = withPlatformLogo(InsightsIcon);
+const ScorecardIcon = withPlatformLogo(CampaignIcon);
+const SetTargetsIcon = withPlatformLogo(TargetIcon);
+const UserActionsIcon = withPlatformLogo(MembersIcon);
+
 const SECTIONS = [
-  { id: 'platform', label: 'Platform vs Target', icon: InsightsIcon, render: (close) => <PlatformLinks onPick={close} /> },
-  { id: 'scorecard', label: 'Scorecard', icon: CampaignIcon, render: (close) => <CampaignLinks base="/targets" allLabel="All campaigns" allTo="/targets#scorecard" onPick={close} /> },
-  { id: 'set', label: 'Set Targets', icon: TargetIcon, render: (close) => <CampaignLinks base="/targets/set-target" allLabel="All targets" allTo="/targets/set-target" onPick={close} /> },
+  { id: 'platform', label: 'Platform vs Target', icon: PlatformIcon, render: (close) => <PlatformLinks onPick={close} /> },
+  { id: 'scorecard', label: 'Scorecard', icon: ScorecardIcon, render: (close) => <CampaignLinks base="/targets" allLabel="All campaigns" allTo="/targets#scorecard" onPick={close} /> },
+  { id: 'set', label: 'Set Targets', icon: SetTargetsIcon, render: (close) => <CampaignLinks base="/targets/set-target" allLabel="All targets" allTo="/targets/set-target" onPick={close} /> },
 ];
 
 /** "User Actions": opens the Registrations page (who registered, and what each person did), for the period chosen in the top bar. */
@@ -76,7 +123,7 @@ function UserActionsLink({ onPick }) {
   const range = { today: 'today', month: '30d', '7d': '7d' }[view.period] ?? '7d';
   return (
     <Link to={`/registrations?range=${range}`} state={{ backLabel: 'Targets' }} onClick={onPick} className={`${linkTrigger}`}>
-      <MembersIcon />
+      <UserActionsIcon />
       <span className="whitespace-nowrap">User Actions</span>
     </Link>
   );
@@ -84,6 +131,16 @@ function UserActionsLink({ onPick }) {
 
 /** The top bar of the Targets pages: three dropdowns on wide screens, one "Targets menu" with all of them on smaller ones. */
 function TargetsNav({ variant }) {
+  const { campaignId } = useParams();
+  const { pathname } = useLocation();
+  const [, setView] = useTargetsView();
+  const { data: running } = useTargetCampaigns();
+  const inSettings = pathname.startsWith('/targets/set-target');
+  useEffect(() => {
+    const platform = (inSettings ? (running ?? []) : CAMPAIGNS).find(({ id }) => id === campaignId)?.platform;
+    if (platform) setView({ platform });
+  }, [campaignId, inSettings, running, setView]);
+
   if (variant === 'wide') {
     return (
       <nav className="flex items-center gap-2" aria-label="Targets">

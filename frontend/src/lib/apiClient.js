@@ -29,3 +29,33 @@ export async function apiGet(path, params = {}) {
 
   return body.data;
 }
+
+export const apiPost = (path, payload) => apiSend('POST', path, payload);
+export const apiPut = (path, payload) => apiSend('PUT', path, payload);
+export const apiDelete = (path) => apiSend('DELETE', path);
+
+async function apiSend(method, path, payload) {
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
+      body: payload === undefined ? undefined : JSON.stringify(payload),
+    });
+  } catch {
+    throw new Error('Cannot reach the server. Please try again.');
+  }
+
+  if (response.status === 401) {
+    logout();
+    window.location.replace('/login');
+    throw new Error('Session expired. Please log in again.');
+  }
+
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok || !body.success) {
+    throw new Error(body.message || 'Something went wrong');
+  }
+
+  return body.data;
+}

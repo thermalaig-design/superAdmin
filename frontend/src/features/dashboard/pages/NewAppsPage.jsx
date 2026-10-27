@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import BackLink from '../../../components/BackLink';
 import OptionDropdown from '../../../components/OptionDropdown';
 import Pagination from '../../../components/Pagination';
 import PeriodDropdown from '../../../components/PeriodDropdown';
+import LoadingBar from '../../../components/LoadingBar';
 import ScrollTable from '../../../components/ScrollTable';
 import SearchInput from '../../../components/SearchInput';
 import SortableTh from '../../../components/SortableTh';
@@ -48,6 +49,7 @@ const initials = (text) => (text ?? '').trim().slice(0, 1).toUpperCase() || '#';
  */
 function NewAppsPage() {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
 
   // opens on the period chosen on the dashboard
   const [period, setPeriod] = useState(() => ({
@@ -292,18 +294,27 @@ function NewAppsPage() {
             <SearchInput value={input} onChange={setInput} placeholder="Search app, owner or mobile number" label="Search apps" />
           </div>
         </div>
-        <p className="mt-1 hidden text-xs text-(--c-muted) md:block">Tap a column heading to sort. Tap an owner to see everything that person did.</p>
+        <p className="mt-1 hidden text-xs text-(--c-muted) md:block">Tap a column heading to sort. Tap an app to see everything its creator did.</p>
         <div className="mt-3 flex items-center gap-2 md:hidden">
           <span className="shrink-0 text-xs font-semibold text-(--c-muted)">Sort</span>
           <OptionDropdown block value={sortValue} onChange={onSortChoice} label="Sort the apps" options={SORT_CHOICES} />
         </div>
 
         {/* phones: one card per app */}
-        <ul className={`mt-3 flex flex-col gap-2 md:hidden ${loading && data ? 'opacity-60' : ''}`}>
+        <ul className={`relative mt-3 flex flex-col gap-2 md:hidden ${loading && data ? 'opacity-60' : ''}`}>
+          <LoadingBar as="li" active={loading && !!data} className="absolute inset-0 z-10 md:hidden" />
           {!data && loading && Array.from({ length: 4 }, (_, i) => <li key={i} className="h-24 animate-pulse rounded-xl bg-gray-100" />)}
           {data && data.apps.length === 0 && <li className="rounded-xl bg-(--c-page) px-4 py-8 text-center text-sm text-(--c-text-3)">{search || source ? 'No apps match.' : 'No apps were created in this period.'}</li>}
           {data?.apps.map((app) => (
-            <li key={app.id} className="rounded-xl border border-gray-200 p-3">
+            <li key={app.id} className={`relative rounded-xl border border-gray-200 p-3 ${app.ownerMemberId ? 'transition-colors hover:bg-(--c-accent-soft)/50' : ''}`}>
+              {app.ownerMemberId && (
+                <Link
+                  to={`/registrations/${app.ownerMemberId}`}
+                  state={{ backLabel: 'New Apps' }}
+                  aria-label={`View ${app.owner || 'the creator'}'s activity for ${app.name}`}
+                  className="absolute inset-0 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-accent)"
+                />
+              )}
               <div className="flex items-start gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-xs font-bold text-amber-700">{initials(app.name)}</span>
                 <div className="min-w-0 flex-1">
@@ -315,13 +326,7 @@ function NewAppsPage() {
                 <div className="min-w-0">
                   <dt className="font-semibold uppercase tracking-wide text-(--c-muted)">Built by</dt>
                   <dd className="truncate text-(--c-text-2)">
-                    {app.ownerMemberId ? (
-                      <Link to={`/registrations/${app.ownerMemberId}`} className="font-medium text-(--c-link) hover:underline">
-                        {app.owner || 'No name'}
-                      </Link>
-                    ) : (
-                      app.owner || dash
-                    )}
+                    {app.owner || dash}
                   </dd>
                 </div>
                 <div>
@@ -347,7 +352,7 @@ function NewAppsPage() {
           ))}
         </ul>
 
-        <ScrollTable className="mt-3 hidden md:block">
+        <ScrollTable className="mt-3 hidden md:block" busy={loading && !!data}>
           <table className="w-full min-w-[860px] text-sm">
             <thead>
               <tr>
@@ -378,19 +383,33 @@ function NewAppsPage() {
               )}
 
               {data?.apps.map((app) => (
-                <tr key={app.id} className="transition-colors hover:bg-(--c-accent-soft)/50">
+                <tr
+                  key={app.id}
+                  onClick={(event) => {
+                    if (app.ownerMemberId && !event.target.closest('a')) {
+                      navigate(`/registrations/${app.ownerMemberId}`, { state: { backLabel: 'New Apps' } });
+                    }
+                  }}
+                  className={`transition-colors hover:bg-(--c-accent-soft)/50 ${app.ownerMemberId ? 'cursor-pointer' : ''}`}
+                >
                   <td className="px-4 py-3">
                     <span className="flex items-center gap-3">
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-xs font-bold text-amber-700">{initials(app.name)}</span>
                       <span className="min-w-0">
-                        <span className="block break-words font-semibold">{app.name}</span>
+                        {app.ownerMemberId ? (
+                          <Link to={`/registrations/${app.ownerMemberId}`} state={{ backLabel: 'New Apps' }} title="See what this app's creator did" className="block break-words font-semibold hover:text-(--c-link) hover:underline">
+                            {app.name}
+                          </Link>
+                        ) : (
+                          <span className="block break-words font-semibold">{app.name}</span>
+                        )}
                         {app.ownerApps > 1 && <span className="mt-0.5 inline-block rounded-full bg-amber-50 px-2 py-px text-[0.7rem] font-semibold text-amber-700">{app.ownerApps} apps by this person</span>}
                       </span>
                     </span>
                   </td>
                   <td className="px-4 py-3">
                     {app.ownerMemberId ? (
-                      <Link to={`/registrations/${app.ownerMemberId}`} title="See what this person did" className="font-medium hover:text-(--c-link) hover:underline">
+                      <Link to={`/registrations/${app.ownerMemberId}`} state={{ backLabel: 'New Apps' }} title="See what this person did" className="font-medium hover:text-(--c-link) hover:underline">
                         {app.owner || <span className="font-normal text-(--c-faint)">No name</span>}
                       </Link>
                     ) : (

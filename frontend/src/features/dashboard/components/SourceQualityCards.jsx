@@ -7,10 +7,12 @@ import SourceIcon from './SourceIcon';
 const EMPTY = { leads: 0, creators: 0, activeCreators: 0, apps: 0, actions: 0, loggedIn: 0, platforms: [], rank: null };
 const number = (value) => value.toLocaleString('en-IN');
 
-/** The two steps shown on each card, each as a share of all leads. */
+/** The steps shown on each card, in order, each as a share of all leads. */
 const STAGES = [
+  { key: 'leads', label: 'Leads', verb: 'leads' },
   { key: 'loggedIn', label: 'Logged in', verb: 'logged in' },
   { key: 'creators', label: 'Built an app', verb: 'built an app' },
+  { key: 'activeCreators', label: 'App activity', verb: 'have app activity' },
 ];
 
 function SourceCard({ meta, source, wide, onSelect }) {
@@ -60,7 +62,7 @@ function SourceCard({ meta, source, wide, onSelect }) {
                   </span>
                 </div>
                 <p className="text-xs text-(--c-muted)">
-                  {wide ? `${number(s[stage.key])} of ${number(s.leads)} leads ${stage.verb}` : `${number(s[stage.key])} of ${number(s.leads)}`}
+                  {stage.key === 'leads' ? `${number(s.leads)} lead${s.leads === 1 ? '' : 's'} received` : wide ? `${number(s[stage.key])} of ${number(s.leads)} leads ${stage.verb}` : `${number(s[stage.key])} of ${number(s.leads)}`}
                 </p>
                 <div className="mt-1.5 h-2.5 rounded-full bg-(--c-track)">
                   <div className="animate-grow h-full origin-left rounded-full" style={{ width: `${share}%`, background: meta.color }} />

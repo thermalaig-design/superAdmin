@@ -5,7 +5,7 @@ import AreaChart from '../../../components/AreaChart';
 // import { PieIcon } from '../../../components/sidebar/icons'; // Lead Mix & Conversion card
 // import DonutChart from '../../../components/DonutChart'; // Lead Mix & Conversion card (hidden for now)
 import PeriodFilter from '../../../components/PeriodFilter';
-import { AppsIcon, CampaignIcon, ChartIcon, TargetIcon, TrendIcon } from '../../../components/sidebar/icons';
+import { AppsIcon, CampaignIcon, ChartIcon, TargetIcon } from '../../../components/sidebar/icons';
 import StatCards from '../../../components/StatCards';
 import { useSessionState } from '../../../hooks/useSessionState';
 // import { COLORS } from '../../marketing/utils/leadStats'; // Lead Mix & Conversion card
@@ -14,7 +14,6 @@ import { periodQuery } from '../../member-insights/utils/periodQuery';
 import { periodTitle } from '../../trust-insights/utils/periodTitle';
 import { buildActivitySeries } from '../../trust-insights/utils/trustSeries';
 import CampaignTable from '../components/CampaignTable';
-import FunnelChart from '../components/FunnelChart';
 // import LeadConversion from '../components/LeadConversion'; // Lead Mix & Conversion card
 import MostActiveApps from '../components/MostActiveApps';
 import ReportSection from '../components/ReportSection';
@@ -29,7 +28,7 @@ const number = (value) => value?.toLocaleString('en-IN');
 const EMPTY_SERIES = { trend: [], byHour: [] };
 // const CHANNEL_COLORS = { Facebook: COLORS.facebook, Instagram: COLORS.instagram, Website: COLORS.website, WhatsApp: '#1fa855', 'Google Ads': COLORS.google, Organic: '#d63384' };
 const SCROLL_KEY = 'dashboard:scroll';
-const REPORT_IDS = ['sources', 'journey', 'campaigns', 'apps', 'growth']; // 'mix' (Lead Mix & Conversion) is hidden for now
+const REPORT_IDS = ['sources', 'campaigns', 'apps', 'growth']; // 'mix' (Lead Mix & Conversion) is hidden for now
 
 /** Investor overview: how big the platform is, how fast it is growing, and whether the marketing is working. */
 function DashboardPage() {
@@ -139,6 +138,12 @@ function DashboardPage() {
   const withPeriod = (path, extra) => `${path}${period}${extra ? `${period ? '&' : '?'}${extra}` : ''}`;
   const stats = [
     {
+      accent: 'var(--c-c3)',
+      label: 'New Leads',
+      parts: [{ value: number(t?.leadsInPeriod) }],
+      hint: t ? `Total ${number(t.leads)} · ${number(t.leadsToday)} today` : undefined,
+    },
+    {
       accent: 'var(--c-c2)',
       label: 'New Members',
       parts: [{ value: number(t?.membersInPeriod) }],
@@ -159,12 +164,6 @@ function DashboardPage() {
       hint: t ? `Total ${number(t.trusts)} · ${number(t.trustsToday)} today` : undefined,
     },
     {
-      accent: 'var(--c-c3)',
-      label: 'New Leads',
-      parts: [{ value: number(t?.leadsInPeriod) }],
-      hint: t ? `Total ${number(t.leads)} · ${number(t.leadsToday)} today` : undefined,
-    },
-    {
       accent: 'var(--c-c4)',
       label: 'App Activity',
       parts: [{ value: number(data?.activity.total) }],
@@ -178,7 +177,6 @@ function DashboardPage() {
   );
 
   const label = sourceByKey(sourceKey)?.label;
-  const funnel = leadData?.funnel;
   const campaigns = leadData?.campaigns;
   // const conversion = leadData?.leadConversion;
   // const conversionRate = conversion?.withMobile ? Math.round((conversion.converted / conversion.withMobile) * 100) : null;
@@ -240,19 +238,6 @@ function DashboardPage() {
           ))}
         >
           <SourceQualityCards sources={data?.sources} selected={sourceKey} onSelect={setSourceKey} loading={initialLoad} embedded />
-        </ReportSection>
-
-        <ReportSection
-          id="journey"
-          title="Client Journey"
-          subtitle="Leads → logged in → built an app → app has activity"
-          icon={<TrendIcon />}
-          iconBg="linear-gradient(135deg, var(--c-grad-from), var(--c-grad-to))"
-          open={!!open.journey}
-          onToggle={() => toggle('journey')}
-          summary={funnel && <span><b>{number(funnel.creators)}</b> apps from <b>{number(funnel.leads)}</b> leads</span>}
-        >
-          <FunnelChart funnel={funnel} loading={initialLoad} scope={label} embedded />
         </ReportSection>
 
         <ReportSection

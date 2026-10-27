@@ -1,17 +1,19 @@
+import LoadingBar from './LoadingBar';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { useScrollEdges } from '../hooks/useScrollEdges';
 
 /**
  * A table that scrolls sideways inside a rounded box when it does not fit. The scrollbar is hidden, so:
  * a mouse can drag the table, touch can swipe, and a soft fade on the left / right edge shows there is more.
- * Every column scrolls together (nothing is pinned). Pass the `<table>` as children, with a `min-w-*` that suits its columns.
+ * `busy` slides a loading bar over the top while new rows are on the way. Every column scrolls together (nothing is pinned). Pass the `<table>` as children, with a `min-w-*` that suits its columns.
  */
-function ScrollTable({ children, className = '' }) {
+function ScrollTable({ children, className = '', busy = false }) {
   const scrollRef = useDragScroll();
   const edges = useScrollEdges(scrollRef);
 
   return (
     <div data-scrolled={edges.left} className={`group relative rounded-xl border border-gray-200 ${className}`}>
+      <LoadingBar active={busy} className="absolute inset-0 z-[4]" />
       <div ref={scrollRef} className="scrollbar-none cursor-grab overflow-x-auto rounded-xl">
         {children}
       </div>

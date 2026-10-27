@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 
 import ScrollTable from '../../../components/ScrollTable';
 import { PlatformTile } from './PlatformCard';
+import { useEditPath } from '../hooks/useEditPath';
+import { useTargetsView } from '../hooks/useTargetsView';
 import { count, money, STATUS } from '../utils/targetMath';
 
 const COLUMNS = [
@@ -31,11 +33,15 @@ function StatusPill({ status }) {
 const sortValue = (row, key) => (key === 'status' ? (row.status ? STATUS[row.status].order : null) : row[key]);
 
 /** A small pencil that opens the target form of this campaign (or of the overall target). */
-function EditTarget({ to, name }) {
+function EditTarget({ to = '/targets/set-target', platform = null, name }) {
+  const [, setView] = useTargetsView();
   return (
     <Link
       to={to}
-      onClick={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.stopPropagation();
+        setView({ platform });
+      }}
       title={`Edit the target of ${name}`}
       aria-label={`Edit the target of ${name}`}
       className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-(--c-muted) transition hover:bg-(--c-accent-soft) hover:text-(--c-link) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-accent)"
@@ -50,6 +56,7 @@ function EditTarget({ to, name }) {
 
 /** The campaigns as a table: sortable columns, a total row, and a pencil by each target that opens its form. */
 function Scorecard({ rows, totals, flashId }) {
+  const editPath = useEditPath();
   const [sort, setSort] = useState(null); // { key, dir } or null = original order
   const [openCampaigns, setOpenCampaigns] = useState(() => new Set());
 
@@ -132,7 +139,7 @@ function Scorecard({ rows, totals, flashId }) {
                 <td className="px-3 py-3 tabular-nums">
                   <span className="flex items-center gap-1">
                     {money(row.target)}
-                    <EditTarget to={`/targets/set-target/${row.id}`} name={row.name} />
+                    <EditTarget to={editPath(row)} platform={row.platform} name={row.name} />
                   </span>
                 </td>
                 <td className="px-3 py-3"><StatusPill status={row.status} /></td>
@@ -151,7 +158,7 @@ function Scorecard({ rows, totals, flashId }) {
                   <td className="px-3 py-2 tabular-nums">
                     <span className="flex items-center gap-1">
                       {money(adSet.target)}
-                      <EditTarget to={`/targets/set-target/${row.id}/${adSet.id}`} name={`${row.name} ad set ${adSet.name}`} />
+                      <EditTarget to={editPath(row)} platform={row.platform} name={`${row.name} ad set ${adSet.name}`} />
                     </span>
                   </td>
                   <td className="px-3 py-2"><StatusPill status={adSet.status} /></td>
@@ -173,7 +180,7 @@ function Scorecard({ rows, totals, flashId }) {
             <td className="px-3 py-3 tabular-nums">
               <span className="flex items-center gap-1">
                 {money(totals.target)}
-                <EditTarget to="/targets/set-target" name="all campaigns" />
+                <EditTarget name="all campaigns" />
               </span>
             </td>
             <td className="px-3 py-3"><StatusPill status={totals.status} /></td>

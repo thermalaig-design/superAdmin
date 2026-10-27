@@ -5,7 +5,9 @@ import { apiGet } from '../../../lib/apiClient';
  * The people who registered in the period, newest first. Response data: { total, page, pageSize,
  * registrations: [{ id, name, mobile, source, registeredAt, loggedIn, loginCount, firstLoginAt, appCount, actionCount }] }
  */
-export const fetchRegistrations = ({ range, from, to, search, page, pageSize }) => apiGet('/registrations', { range, from, to, search, page, pageSize });
+export const fetchRegistrations = ({ range, from, to, search, page, pageSize, campaign, source, platform, adSet, stage }) =>
+  apiGet('/registrations', { range, from, to, search, page, pageSize, campaign, source, platform, adSet, stage });
+// campaign / source / platform / adSet / stage: only the people behind one number of the dashboard's campaign table
 
 /**
  * GET /registrations/:memberId/timeline
@@ -21,3 +23,6 @@ export const fetchRegistrationTimeline = (memberId) => apiGet(`/registrations/${
  * (loggedIn / creators are people among the leads of the period; apps = apps they created)
  */
 export const fetchRegistrationSummary = ({ range, from, to }) => apiGet('/registrations/summary', { range, from, to });
+
+/** GET /registrations/campaigns  (range params, optional source) -> [{ label, leads }] for the Campaign filter */
+export const fetchRegistrationCampaigns = ({ range, from, to, source }) => apiGet('/registrations/campaigns', { range, from, to, source });

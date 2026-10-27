@@ -91,7 +91,7 @@ function TargetsPage() {
           <span className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-(--c-text-2)" title="Change the period from the top bar">
             {PERIODS.find(({ value }) => value === period)?.label}
           </span>
-          <Link to="/targets/set-target" className={gradientButton}>
+          <Link to="/targets/set-target" onClick={() => setView({ platform: null })} className={gradientButton}>
             Set Targets <span aria-hidden="true">→</span>
           </Link>
         </div>
@@ -203,7 +203,7 @@ function TargetsPage() {
         <p className="max-w-3xl text-sm font-medium text-(--c-text-2)">
           Set a cost-per-app target for each campaign. Review it every 2 weeks.
         </p>
-        <Link to="/targets/set-target" className={gradientButton}>
+        <Link to="/targets/set-target" onClick={() => setView({ platform: null })} className={gradientButton}>
           Go to Set Targets <span aria-hidden="true">→</span>
         </Link>
       </div>

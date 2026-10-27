@@ -6,6 +6,7 @@ import BackLink from '../../../components/BackLink';
 import Pagination from '../../../components/Pagination';
 import OptionDropdown from '../../../components/OptionDropdown';
 import PeriodDropdown from '../../../components/PeriodDropdown';
+import LoadingBar from '../../../components/LoadingBar';
 import ScrollTable from '../../../components/ScrollTable';
 import SearchInput from '../../../components/SearchInput';
 import SortableTh from '../../../components/SortableTh';
@@ -401,7 +402,8 @@ function OtpNotLoginPage() {
         </div>
 
         {/* phones: one card per person */}
-        <ul className={`mt-3 flex flex-col gap-2 md:hidden ${loading && data ? 'opacity-60' : ''}`}>
+        <ul className={`relative mt-3 flex flex-col gap-2 md:hidden ${loading && data ? 'opacity-60' : ''}`}>
+          <LoadingBar as="li" active={loading && !!data} className="absolute inset-0 z-10 md:hidden" />
           {!data && loading && Array.from({ length: 4 }, (_, i) => <li key={i} className="h-24 animate-pulse rounded-xl bg-gray-100" />)}
           {data && data.people.length === 0 && (
             <li className="rounded-xl bg-(--c-page) px-4 py-8 text-center text-sm text-(--c-text-3)">{search || filterLabel ? 'No one matches.' : 'No one in this group for this period.'}</li>
@@ -439,7 +441,7 @@ function OtpNotLoginPage() {
           ))}
         </ul>
 
-        <ScrollTable className="mt-3 hidden md:block">
+        <ScrollTable className="mt-3 hidden md:block" busy={loading && !!data}>
           <table className="w-full min-w-[900px] text-sm">
             <thead>
               <tr>
