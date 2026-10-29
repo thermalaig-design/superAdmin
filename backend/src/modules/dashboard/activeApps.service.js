@@ -1,12 +1,12 @@
 import { supabase } from '../../config/supabase.js';
-import { isUnknownMember, isWhatsAppMember, leadChannel, organicMemberLead, sourceKeyOf, sourceLabelOf, unknownMemberLead, whatsappMemberLead } from '../marketing/leadStats.service.js';
+import { googleClickMemberLead, isGoogleClickMember, isUnknownMember, isWhatsAppMember, leadChannel, organicMemberLead, sourceKeyOf, sourceLabelOf, unknownMemberLead, whatsappMemberLead } from '../marketing/leadStats.service.js';
 
 const PAGE_SIZE = 1000;
 const TOP_APPS = 10;
 const DETAIL_BATCH = 5; // how many apps are looked up at once
 
 /** What the list can be limited to: every app, the apps from one ad source, or the apps that came without an ad lead. */
-export const APP_SCOPES = ['all', 'meta', 'whatsapp', 'google', 'website', 'organic', 'unknown', 'direct'];
+export const APP_SCOPES = ['all', 'meta', 'whatsapp', 'google', 'googleclick', 'website', 'organic', 'unknown', 'direct'];
 
 const unwrap = ({ data, count, error }) => {
     if (error) throw error;
@@ -38,10 +38,40 @@ export async function organicOwners(apps) {
             await supabase
                 .from('Members')
                 .select('members_id, Name, Mobile, created_at, source, sub_source, campaign_name')
-                .or('source.ilike.organic,source.ilike.wa*broadcasting,source.is.null')
+                .or('source.ilike.organic,source.ilike.wa*broadcasting,source.ilike.google*click,source.is.null')
                 .in('members_id', ids.slice(i, i + 100))
         );
-        data.forEach((member) => found.set(member.members_id, isUnknownMember(member) ? unknownMemberLead(member) : isWhatsAppMember(member) ? whatsappMemberLead(member) : organicMemberLead(member)));
+        data.forEach((member) => found.set(member.members_id, isUnknownMember(member) ? unknownMemberLead(member) : isWhatsAppMember(member) ? whatsappMemberLead(member) : isGoogleClickMember(member) ? googleClickMemberLead(member) : organicMemberLead(member)));
+    }
+    return found;
+}
+
+/** The apps (Trust rows) created in [start, end), with their owner. */
+async function appsCreatedIn(start, end) {
+    const apps = [];
+    for (let from = 0; ; from += PAGE_SIZE) {
+        const { data } = unwrap(
+            await supabase
+                .from('Trust')
+                .select('id, name, created_at, superuser:superuser_id(id, name, mobile, members_id)')
+                .gte('created_at', start)
+                .lt('created_at', end)
+                .order('id')
+                .range(from, from + PAGE_SIZE - 1)
+        );
+        apps.push(...data);
+        if (data.length < PAGE_SIZE) break;
+    }
+    return apps;
+}
+
+/** The owners of these apps as members_id -> Members row (with Members.source). */
+async function ownerMembers(apps) {
+    const ids = [...new Set(apps.map((app) => app.superuser?.members_id).filter(Boolean))];
+    const found = new Map();
+    for (let i = 0; i < ids.length; i += 100) {
+        const { data } = unwrap(await supabase.from('Members').select('members_id, Name, Mobile, created_at, source, sub_source, campaign_name').in('members_id', ids.slice(i, i + 100)));
+        data.forEach((member) => found.set(member.members_id, member));
     }
     return found;
 }
@@ -121,18 +151,23 @@ async function appDetails(app, start, end) {
  * 'direct' (owners with no matching lead). `scopeCounts` says how many apps with activity fall in each group.
  */
 export async function getMostActiveApps({ start, end }, scope = 'all') {
-    const [ranked, leads] = await Promise.all([activityPerApp(start, end), firstLeadByPhone()]);
+    const [active, created, leads] = await Promise.all([activityPerApp(start, end), appsCreatedIn(start, end), firstLeadByPhone()]);
 
-    // Owners with no ad lead may still be organic members (Members.source = 'Organic')
-    const organic = await organicOwners(ranked.filter((app) => {
-        const lead = leads.get(last10(app.superuser?.mobile));
-        return !(lead && lead.lead_received_at <= app.created_at);
-    }));
+    // Apps created in the period are listed too, even with no activity yet (0 actions).
+    const seen = new Set(active.map((app) => app.id));
+    const ranked = [...active, ...created.filter((app) => !seen.has(app.id)).map((app) => ({ ...app, appActions: 0, userPanel: 0, score: 0 }))];
+
+    // The source is the owner's Members.source, the same rule as the Platform Overview cards.
+    const owners = await ownerMembers(ranked);
 
     const apps = ranked.map((app) => {
+        const owner = owners.get(app.superuser?.members_id);
+        if (!owner) return { app, fromAd: null, group: 'direct' };
+        const group = sourceKeyOf({ source: owner.source ?? '' });
         const lead = leads.get(last10(app.superuser?.mobile));
-        const fromAd = (lead && lead.lead_received_at <= app.created_at ? lead : null) ?? organic.get(app.superuser?.members_id) ?? null;
-        return { app, fromAd, group: fromAd ? sourceKeyOf(fromAd) : 'direct' };
+        const leadBefore = lead && lead.lead_received_at <= app.created_at && sourceKeyOf(lead) === group ? lead : null;
+        const fromMember = isUnknownMember(owner) ? unknownMemberLead(owner) : { ...organicMemberLead(owner), source: owner.source, sub_source: owner.sub_source ?? null };
+        return { app, fromAd: leadBefore ?? fromMember, group };
     });
 
     const scopeCounts = Object.fromEntries(APP_SCOPES.map((key) => [key, key === 'all' ? apps.length : apps.filter((a) => a.group === key).length]));

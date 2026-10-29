@@ -16,6 +16,7 @@ const BADGES = {
   Instagram: { text: 'Ig', color: COLORS.instagram },
   Website: { text: 'Web', color: COLORS.website },
   'Google Ads': { text: 'Gs', color: COLORS.google },
+  'Google Click': { text: 'Gc', color: COLORS.google },
   WhatsApp: { text: 'Wa', color: '#1fa855' },
   Organic: { text: 'Or', color: '#d63384' },
   Unknown: { text: '?', color: '#64748b' },

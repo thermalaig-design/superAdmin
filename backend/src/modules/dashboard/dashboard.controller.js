@@ -3,10 +3,12 @@ import { resolveRange } from '../../utils/dateRange.js';
 import { APP_SCOPES, getMostActiveApps } from './activeApps.service.js';
 import { getAppJourney } from './appJourney.service.js';
 import { getAppLogins } from './appLogins.service.js';
+import { getAppProducts } from './appProducts.service.js';
 import { getDashboard } from './dashboard.service.js';
 import { getNewApps } from './newApps.service.js';
 import { getOtpNotLoginReport } from './otpNotLoginReport.service.js';
-import { getCampaignLeads } from '../marketing/leadStats.service.js';
+import { SOURCES, getCampaignLeads } from '../marketing/leadStats.service.js';
+import { DETAIL_CARDS, getCardDetails } from './cardDetails.service.js';
 
 export async function fetchDashboard(req, res) {
     try {
@@ -21,6 +23,31 @@ export async function fetchDashboard(req, res) {
     } catch (error) {
         console.error('fetchDashboard failed:', error);
         return res.status(500).json({ success: false, message: 'Failed to load dashboard' });
+    }
+}
+
+/** The rows behind one Platform Overview card, for one lead source (or all). */
+export async function fetchCardDetails(req, res) {
+    try {
+        const { card } = req.query;
+        const source = req.query.source || '';
+        if (!DETAIL_CARDS.includes(card)) {
+            return res.status(400).json({ success: false, message: 'Unknown card' });
+        }
+        if (source && !SOURCES.some((s) => s.key === source)) {
+            return res.status(400).json({ success: false, message: 'Unknown source' });
+        }
+
+        const range = resolveRange(req.query);
+        if (range.error) {
+            return res.status(400).json({ success: false, message: range.error });
+        }
+
+        const data = await cached(`card-details:${card}:${source}:${JSON.stringify(range)}`, () => getCardDetails(range, { card, source }));
+        return res.json({ success: true, data });
+    } catch (error) {
+        console.error('fetchCardDetails failed:', error);
+        return res.status(500).json({ success: false, message: 'Failed to load the details' });
     }
 }
 
@@ -92,6 +119,23 @@ export async function fetchAppJourney(req, res) {
     } catch (error) {
         console.error('fetchAppJourney failed:', error);
         return res.status(500).json({ success: false, message: 'Failed to load app journey' });
+    }
+}
+
+/** Every product of one app (name, category, price, picture): the list behind the Products number of an app row. */
+export async function fetchAppProducts(req, res) {
+    try {
+        const { trustId } = req.query;
+        if (!trustId) {
+            return res.status(400).json({ success: false, message: 'trustId is required' });
+        }
+
+        const data = await cached(`app-products:${trustId}`, () => getAppProducts(trustId));
+        if (!data) return res.status(404).json({ success: false, message: 'App not found' });
+        return res.json({ success: true, data });
+    } catch (error) {
+        console.error('fetchAppProducts failed:', error);
+        return res.status(500).json({ success: false, message: 'Failed to load the products' });
     }
 }
 

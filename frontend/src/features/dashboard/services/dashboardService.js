@@ -9,7 +9,7 @@ import { apiGet } from '../../../lib/apiClient';
  *   period: { from, to },
  *   totals: { members, membersInPeriod, otpNotLogin, membersToday, appDownloaded, trusts, trustsInPeriod, trustsToday,
  *             leads, leadsInPeriod, leadsToday },
- *   activity: { total, byUsers, byMembers },                 // page_activity rows in the period
+ *   activity: { total, byUsers, byMembers, setuAi, userPanel, otherApps },                 // page_activity rows in the period
  *   series: { members | trusts | activity | leads: { trend: [{ date, count }], byHour: [{ hour, count }] } },
  *   topTrusts: [{ id, name, count }],                        // busiest apps in the period
  *   leadChannels: [{ label, count }],                        // leads received in the period, by source
@@ -78,3 +78,19 @@ export const fetchOtpNotLogin = ({ range, from, to, status, source, campaign, se
  */
 export const fetchNewApps = ({ range, from, to, source, search, sort, dir, page, pageSize }) =>
   apiGet('/dashboard/new-apps', { range, from, to, source, search, sort, dir, page, pageSize });
+
+/**
+ * GET /dashboard/card-details  (same range params, plus card and source)
+ * The rows behind one Platform Overview card for one lead source (omit source for all).
+ * card: 'leads' | 'members' | 'notLogin' | 'loggedIn' | 'apps' | 'activity' | 'otherLogin' | 'setuActivity' | 'panelActivity' | 'otherActivity'.
+ * Response data: { card, source, total, columns: [{ key, label, type }], rows: [{ …one value per column }] }
+ * Logins and activity are grouped per person (and app) with a count; total is the card's number.
+ */
+export const fetchCardDetails = ({ range, from, to, card, source }) => apiGet('/dashboard/card-details', { range, from, to, card, source });
+
+/**
+ * GET /dashboard/app-products?trustId=…
+ * Every product of one app, all time, newest first. Response data: { app: { id, name }, total, products: [{ id, name, category, status
+ * ('active' | 'inactive' | 'draft'), price, mrp (only when higher than price), discountPct, billing, memberPrice, image (url | null), imageCount, createdAt }] }
+ */
+export const fetchAppProducts = ({ trustId }) => apiGet('/dashboard/app-products', { trustId });

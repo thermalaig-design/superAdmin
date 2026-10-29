@@ -6,7 +6,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
  * link that brought the user here said so: <Link state={{ backLabel: 'Trust Insights' }} />.
  * A page opened directly has nothing to go back to, so it goes to `to` and shows `label`.
  */
-function BackLink({ to, label, button = false, buttonText = "Back" }) {
+function BackLink({ to, label, button = false, buttonText = "Back", compact = false }) {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -25,9 +25,10 @@ function BackLink({ to, label, button = false, buttonText = "Back" }) {
       to={to}
       onClick={goBack}
       title={text}
+      data-compact={compact}
       className={
         button
-          ? 'group inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-(--c-grad-from) via-(--c-grad-via) to-(--c-grad-to) pl-2 pr-3.5 text-sm font-semibold text-white shadow-[0_2px_8px_rgba(15,120,110,0.35)] transition hover:brightness-110 hover:shadow-[0_4px_12px_rgba(15,120,110,0.4)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-accent)'
+          ? 'group inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-(--c-grad-from) via-(--c-grad-via) to-(--c-grad-to) pl-2 pr-3.5 max-sm:data-[compact=true]:px-2 text-sm font-semibold text-white shadow-[0_2px_8px_rgba(15,120,110,0.35)] transition hover:brightness-110 hover:shadow-[0_4px_12px_rgba(15,120,110,0.4)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-accent)'
           : 'text-sm font-medium text-(--c-link) hover:underline'
       }
     >
@@ -38,7 +39,7 @@ function BackLink({ to, label, button = false, buttonText = "Back" }) {
               <path d="M12 4 6 10l6 6" />
             </svg>
           </span>
-          {buttonText}
+          <span className={compact ? 'hidden sm:inline' : undefined}>{buttonText}</span>
         </>
       ) : (
         <>← {text}</>

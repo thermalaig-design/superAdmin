@@ -17,7 +17,7 @@ function SourceIcon({ sourceKey, letter, className = 'h-5 w-5' }) {
       </svg>
     );
   }
-  if (sourceKey === 'google') {
+  if (sourceKey === 'google' || sourceKey === 'googleclick') {
     // a "G": an open ring with a bar
     return (
       <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -12,6 +12,7 @@ export const last10 = (value) => String(value ?? '').replace(/\D/g, '').slice(-1
 
 /** True for the WhatsApp source (Members.source = 'WA Broadcasting'). */
 const isWhatsAppSource = (source) => /whats\s*app|\bwa\b/i.test(source ?? '');
+const isGoogleClickSource = (source) => /google\s*click/i.test(source ?? ''); // members who came from a Google click (Members.source = 'Google click')
 
 /** Where a lead came from: Facebook / Instagram (Meta platform), Website, or something else. */
 export function leadChannel(lead) {
@@ -19,6 +20,7 @@ export function leadChannel(lead) {
     if (lead.platform === 'ig') return 'Instagram';
     if (isWhatsAppSource(lead.source)) return lead.sub_source?.trim() || 'WhatsApp';
     if (/website/i.test(lead.source ?? '')) return 'Website';
+    if (isGoogleClickSource(lead.source)) return 'Google Click';
     if (/google/i.test(lead.source ?? '')) return 'Google Ads';
     if (/meta/i.test(lead.source ?? '')) return 'Meta (other)';
     return lead.source?.trim() || 'Other';
@@ -187,6 +189,7 @@ function campaignOf(lead) {
     const name = lead.campaign_name?.trim();
     if (name) return name;
     if (/website/i.test(lead.source ?? '')) return 'Website (no campaign)';
+    if (isGoogleClickSource(lead.source)) return 'Google Click (no campaign)';
     if (/google/i.test(lead.source ?? '')) return 'Google Ads (no campaign)';
     if (/meta/i.test(lead.source ?? '')) return 'Meta (no campaign)';
     if (isWhatsAppSource(lead.source)) return 'WhatsApp Broadcasting';
@@ -251,10 +254,11 @@ export function campaignPerformance(leads, trace) {
 }
 
 /** The lead sources shown on the dashboard. Every one is always returned, even with 0 leads. */
-const SOURCES = [
+export const SOURCES = [
     { key: 'meta', label: 'Meta Ads' },
     { key: 'whatsapp', label: 'WhatsApp' },
     { key: 'google', label: 'Google Ads' },
+    { key: 'googleclick', label: 'Google Click' },
     { key: 'website', label: 'Website' },
     { key: 'organic', label: 'Organic' },
     { key: 'unknown', label: 'Unknown' },
@@ -265,6 +269,7 @@ const sourceOf = (lead) => {
     if (/organic/i.test(source)) return 'organic'; // members who joined on their own (Members.source = 'Organic')
     if (/^unknown$/i.test(source.trim())) return 'unknown'; // members with no source at all (Members.source is empty)
     if (/website/i.test(source)) return 'website';
+    if (isGoogleClickSource(source)) return 'googleclick';
     if (/google/i.test(source)) return 'google';
     if (/meta|facebook|instagram/i.test(source) || ['fb', 'ig'].includes(lead.platform)) return 'meta';
     if (!source.trim()) return 'unknown';
@@ -299,6 +304,18 @@ export const whatsappMemberLead = (member) => ({
     source: member.source,
     sub_source: member.sub_source ?? null,
     adset_name: null,
+    is_organic: null,
+});
+
+/**
+ * Google click people are not in `leads` either: they are the members whose Members.source is 'Google click'. Each one is
+ * treated as a lead received when they joined, under the source "Google Click".
+ */
+export const isGoogleClickMember = (member) => isGoogleClickSource(member.source);
+export const googleClickMemberLead = (member) => ({
+    ...organicMemberLead(member),
+    source: 'Google Click',
+    sub_source: member.sub_source ?? null,
     is_organic: null,
 });
 
@@ -470,6 +487,26 @@ async function fetchPeriodLeads({ start, end }, source) {
                     .range(from, from + LEAD_PAGE_SIZE - 1)
             );
             all.push(...data.map(whatsappMemberLead));
+            if (data.length < LEAD_PAGE_SIZE) break;
+        }
+        all.sort((a, b) => receivedAt(b) - receivedAt(a));
+    }
+
+    // Google click members (Members.source = 'Google click') count as Google Click leads, received when they joined.
+    if (!source || source === 'googleclick') {
+        for (let from = 0; from < LEAD_MAX_ROWS; from += LEAD_PAGE_SIZE) {
+            const { data } = unwrap(
+                await supabase
+                    .from('Members')
+                    .select('members_id, Name, Mobile, created_at, source, sub_source, campaign_name')
+                    .ilike('source', 'google click')
+                    .gte('created_at', start)
+                    .lt('created_at', end)
+                    .order('created_at', { ascending: false })
+                    .order('members_id')
+                    .range(from, from + LEAD_PAGE_SIZE - 1)
+            );
+            all.push(...data.map(googleClickMemberLead));
             if (data.length < LEAD_PAGE_SIZE) break;
         }
         all.sort((a, b) => receivedAt(b) - receivedAt(a));

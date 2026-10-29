@@ -9,17 +9,19 @@ import { AppsIcon, CampaignIcon, ChartIcon, TargetIcon } from '../../../componen
 import StatCards from '../../../components/StatCards';
 import { useSessionState } from '../../../hooks/useSessionState';
 // import { COLORS } from '../../marketing/utils/leadStats'; // Lead Mix & Conversion card
+import { COLORS } from '../../marketing/utils/leadStats';
 import { formatPercent, percentOf } from '../../../utils/percent';
-import { periodQuery } from '../../member-insights/utils/periodQuery';
 import { periodTitle } from '../../trust-insights/utils/periodTitle';
 import { buildActivitySeries } from '../../trust-insights/utils/trustSeries';
 import CampaignTable from '../components/CampaignTable';
+import CardDetails from '../components/CardDetails';
 // import LeadConversion from '../components/LeadConversion'; // Lead Mix & Conversion card
 import MostActiveApps from '../components/MostActiveApps';
 import ReportSection from '../components/ReportSection';
 import SourceFilterBar from '../components/SourceFilterBar';
 import SourceQualityCards from '../components/SourceQualityCards';
 import { useActiveApps } from '../hooks/useActiveApps';
+import { useCardDetails } from '../hooks/useCardDetails';
 import { useDashboard } from '../hooks/useDashboard';
 import { SOURCES, sourceByKey } from '../utils/sources';
 
@@ -134,41 +136,108 @@ function DashboardPage() {
   // }));
 
   const t = data?.totals;
-  const period = periodQuery(filter);
-  const withPeriod = (path, extra) => `${path}${period}${extra ? `${period ? '&' : '?'}${extra}` : ''}`;
+  // With a source chosen, every card shows only the people who came from that source.
+  const sc = sourceKey ? source?.cards ?? {} : null;
+  const act = sc ? sc.activity : data?.activity;
+
+  // Click a card to see its number split by source (the chips), then click a source to open the rows behind it.
+  const [pickedCard, setPickedCard] = useState(null);
+  const pick = (key) => setPickedCard((current) => (current === key ? null : key));
+  const select = (key) => ({ onSelect: () => pick(key), active: pickedCard === key });
+  const cardValue = {
+    leads: (c) => c.leadsInPeriod,
+    members: (c) => c.membersInPeriod,
+    notLogin: (c) => c.otpNotLogin,
+    loggedIn: (c) => c.otpLoggedIn,
+    apps: (c) => c.trustsInPeriod,
+    activity: (c) => c.activity.total,
+    otherLogin: (c) => c.pwaLogins,
+    setuActivity: (c) => c.activity.setuAi,
+    panelActivity: (c) => c.activity.userPanel,
+    otherActivity: (c) => c.activity.otherApps,
+  };
+  const CARD_TITLES = {
+    leads: 'New Leads',
+    members: 'New Members',
+    notLogin: 'SETU AI · Not login',
+    loggedIn: 'SETU AI · Logged in',
+    apps: 'New Apps',
+    activity: 'App Activity',
+    otherLogin: 'Other App Login',
+    setuActivity: 'SETU APP Activity',
+    panelActivity: 'User Panel Activity',
+    otherActivity: 'Other App Activity',
+  };
   const stats = [
     {
       accent: 'var(--c-c3)',
       label: 'New Leads',
-      parts: [{ value: number(t?.leadsInPeriod) }],
-      hint: t ? `Total ${number(t.leads)} · ${number(t.leadsToday)} today` : undefined,
+      parts: [{ value: number(sc ? sc.leadsInPeriod : t?.leadsInPeriod) }],
+      split: !sc && t?.leadsBySource && [
+        { label: 'Meta', value: t.leadsBySource.meta, color: COLORS.facebook },
+        { label: 'Google', value: t.leadsBySource.google, color: COLORS.google },
+        ...(t.leadsBySource.other ? [{ label: 'Other', value: t.leadsBySource.other, color: COLORS.other }] : []),
+      ],
+      hint: !sc && t ? `Total ${number(t.leads)} · ${number(t.leadsToday)} today` : undefined,
+      ...select('leads'),
     },
     {
       accent: 'var(--c-c2)',
       label: 'New Members',
-      parts: [{ value: number(t?.membersInPeriod) }],
+      parts: [{ value: number(sc ? sc.membersInPeriod : t?.membersInPeriod) }],
+      ...select('members'),
     },
     {
       accent: 'var(--c-bad-text)',
-      label: 'OTP Not Login',
+      label: 'SETU AI',
       parts: [
-        { value: number(t?.otpNotLogin), caption: 'Not login', color: '#dc2626', to: withPeriod('/otp-not-login', 'status=notLoggedIn') },
-        { value: number(t?.otpLoggedIn), caption: 'Logged in', color: '#16a34a', to: withPeriod('/otp-not-login', 'status=loggedIn') },
+        { value: number(sc ? sc.otpNotLogin : t?.otpNotLogin), caption: 'Not login', color: '#dc2626', ...select('notLogin') },
+        { value: number(sc ? sc.otpLoggedIn : t?.otpLoggedIn), caption: 'Logged in', color: '#16a34a', ...select('loggedIn') },
       ],
     },
     {
       accent: 'var(--c-good)',
       label: 'New Apps',
-      parts: [{ value: number(t?.trustsInPeriod) }],
-      to: withPeriod('/new-apps'),
-      hint: t ? `Total ${number(t.trusts)} · ${number(t.trustsToday)} today` : undefined,
+      parts: [{ value: number(sc ? sc.trustsInPeriod : t?.trustsInPeriod) }],
+      hint: !sc && t ? `Total ${number(t.trusts)} · ${number(t.trustsToday)} today` : undefined,
+      ...select('apps'),
     },
     {
       accent: 'var(--c-c4)',
       label: 'App Activity',
-      parts: [{ value: number(data?.activity.total) }],
+      parts: [{ value: number(act?.total) }],
+      ...select('activity'),
+    },
+    {
+      accent: 'var(--c-c3)',
+      label: 'Other App Login',
+      parts: [{ value: number(sc ? sc.pwaLogins : t?.pwaLogins) }],
+      ...select('otherLogin'),
+    },
+    {
+      accent: 'var(--c-c2)',
+      label: 'SETU APP Activity',
+      parts: [{ value: number(act?.setuAi) }],
+      ...select('setuActivity'),
+    },
+    {
+      accent: 'var(--c-good)',
+      label: 'User Panel Activity',
+      parts: [{ value: number(act?.userPanel) }],
+      ...select('panelActivity'),
+    },
+    {
+      accent: 'var(--c-bad-text)',
+      label: 'Other App Activity',
+      parts: [{ value: number(act?.otherApps) }],
+      ...select('otherActivity'),
     },
   ];
+
+  // The chips: the picked card's number per source (the leads per source when no card is picked).
+  const valueOf = pickedCard ? (s) => cardValue[pickedCard](s.cards) : (s) => s.leads;
+  const chipCounts = data && { all: data.sources.reduce((sum, s) => sum + valueOf(s), 0), ...Object.fromEntries(data.sources.map((s) => [s.key, valueOf(s)])) };
+  const details = useCardDetails(filter, pickedCard, sourceKey);
 
   const chart = (title, noun, data_, nounPlural) => (
     <section className={card}>
@@ -207,8 +276,17 @@ function DashboardPage() {
         <SourceFilterBar
           value={sourceKey}
           onChange={setSourceKey}
-          counts={data && { all: data.sources.reduce((sum, s) => sum + s.leads, 0), ...Object.fromEntries(data.sources.map((s) => [s.key, s.leads])) }}
+          counts={chipCounts}
         />
+        {pickedCard && (
+          <CardDetails
+            key={`${pickedCard}:${sourceKey}`}
+            title={`${CARD_TITLES[pickedCard]} · ${label ?? 'All sources'}`}
+            details={details.data?.card === pickedCard && (details.data?.source ?? null) === sourceKey ? details.data : null}
+            loading={details.loading}
+            error={details.error}
+          />
+        )}
       </div>
 
       <div className="mt-8 flex flex-wrap items-end justify-between gap-3">

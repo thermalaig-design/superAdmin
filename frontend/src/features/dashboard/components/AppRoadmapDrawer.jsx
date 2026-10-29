@@ -10,7 +10,7 @@ import { useAppJourney } from '../hooks/useAppJourney';
 const number = (value) => value.toLocaleString('en-IN');
 const LOGIN_METHODS = { otp: 'Mobile OTP verified', secret_code: 'Secret code' };
 const PLATFORMS = { android: 'Android', ios: 'iOS', web: 'Web' };
-const SOURCE_COLORS = { 'Meta Ads': COLORS.facebook, WhatsApp: '#1fa855', 'Google Ads': COLORS.google, Website: COLORS.website, Organic: '#d63384', Unknown: '#64748b' };
+const SOURCE_COLORS = { 'Meta Ads': COLORS.facebook, WhatsApp: '#1fa855', 'Google Ads': COLORS.google, 'Google Click': COLORS.google, Website: COLORS.website, Organic: '#d63384', Unknown: '#64748b' };
 const STEP_COLORS = ['var(--c-c3)', 'var(--c-c3)', 'var(--c-c1)', 'var(--c-c4)', 'var(--c-c2)'];
 const TABS = ['Roadmap', 'Activity', 'Details'];
 

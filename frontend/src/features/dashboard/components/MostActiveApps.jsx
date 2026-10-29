@@ -11,7 +11,7 @@ import SourceSelect from './SourceSelect';
 const th = 'px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.06em] text-(--c-muted)';
 const number = (value) => value.toLocaleString('en-IN');
 
-const SOURCE_COLORS = { 'Meta Ads': COLORS.facebook, WhatsApp: '#1fa855', 'Google Ads': COLORS.google, Website: COLORS.website, Organic: '#d63384', Unknown: '#64748b' };
+const SOURCE_COLORS = { 'Meta Ads': COLORS.facebook, WhatsApp: '#1fa855', 'Google Ads': COLORS.google, 'Google Click': COLORS.google, Website: COLORS.website, Organic: '#d63384', Unknown: '#64748b' };
 
 /** The detail pages behind the two activity numbers (both open on the Dashboard's period; back returns here). */
 const appActionsPath = (app, filter) => `/trust-insights/${app.id}/member-actions${periodQuery(filter)}`;
@@ -37,6 +37,7 @@ const SCOPE_LABELS = {
   meta: 'Meta Ads',
   whatsapp: 'WhatsApp',
   google: 'Google Ads',
+  googleclick: 'Google Click',
   website: 'Website',
   organic: 'Organic',
   unknown: 'Unknown',

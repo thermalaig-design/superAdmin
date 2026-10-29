@@ -32,7 +32,7 @@ function CampaignTargetCard({ campaign, totals, stats, windowLabel, highlighted 
         {campaign.status && <span className={`rounded-full px-3 py-1 text-[0.68rem] font-bold uppercase tracking-wide ${STATUS_STYLE[campaign.status] ?? 'bg-gray-100 text-(--c-muted)'}`}>{campaign.status}</span>}
       </div>
 
-      <div className="stagger mt-5 grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="stagger mt-5 grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <KpiCard accent="var(--c-c2)" label="Spend" value={stats.spend} format={money} hint={windowLabel} />
         <KpiCard accent="var(--c-c3)" label="Leads" value={stats.leads} hint={windowLabel} />
         <KpiCard accent="var(--c-c1)" label="Target / app" value={totals.target || null} format={money} hint={adSets} />

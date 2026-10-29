@@ -20,6 +20,20 @@ function SourceCard({ meta, source, wide, onSelect }) {
   const empty = s.leads === 0;
   const avgActions = s.apps > 0 ? Math.round(s.actions / s.apps) : null;
 
+  // No leads, but members of this source still logged in / built apps / used apps: show those as bars (counts, scaled to the biggest one).
+  const c = s.cards;
+  const fallbackStages = c
+    ? [
+        { label: 'Logged in (SETU AI)', value: c.otpLoggedIn },
+        { label: 'Other app login', value: c.pwaLogins },
+        { label: 'Built an app', value: c.trustsInPeriod },
+        { label: 'App activity', value: c.activity.total },
+      ]
+    : [];
+  const fallbackMax = Math.max(1, ...fallbackStages.map((stage) => stage.value));
+  const fallback = empty && Boolean(c); // always bars (zeros included), never a blank card
+  const fallbackQuiet = fallbackStages.every((stage) => stage.value === 0);
+
   // With one source chosen its card is just a summary (not a button); with all five shown, a card picks its source.
   const Card = wide ? 'div' : 'button';
   const behaviour = wide
@@ -47,7 +61,24 @@ function SourceCard({ meta, source, wide, onSelect }) {
         </div>
       </div>
 
-      {empty ? (
+      {fallback ? (
+        <div className={`space-y-3 ${wide ? 'mt-4' : 'mt-3'}`}>
+          <p className="text-xs text-(--c-muted)">{fallbackQuiet ? 'No leads and no activity in this period' : 'No leads in this period, but these people were active'}</p>
+          {fallbackStages.map((stage) => (
+            <div key={stage.label}>
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="text-sm font-semibold text-(--c-text)">{stage.label}</p>
+                <span className="rounded-full px-2 py-0.5 text-[0.7rem] font-bold tabular-nums text-white" style={{ background: meta.color }}>
+                  {number(stage.value)}
+                </span>
+              </div>
+              <div className="mt-1.5 h-2.5 rounded-full bg-(--c-track)">
+                <div className="animate-grow h-full origin-left rounded-full" style={{ width: `${(stage.value / fallbackMax) * 100}%`, background: meta.color }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : empty ? (
         <p className={`text-sm text-(--c-muted) ${wide ? 'mt-4' : 'mt-3'}`}>No leads in this period</p>
       ) : (
         <div className={`space-y-3 ${wide ? 'mt-4' : 'mt-3'}`}>
@@ -74,7 +105,7 @@ function SourceCard({ meta, source, wide, onSelect }) {
       )}
 
       <p className="mt-3 text-xs text-(--c-muted)">
-        {empty || s.apps === 0 ? 'No apps created yet' : !wide ? `${number(s.apps)} app${s.apps === 1 ? '' : 's'} built` : `${number(s.creators)} ${s.creators === 1 ? 'person' : 'people'} built ${number(s.apps)} app${s.apps === 1 ? '' : 's'}${avgActions !== null ? ` · ${number(avgActions)} actions per app on average` : ''}`}
+        {fallback ? `${number(c.trustsInPeriod)} app${c.trustsInPeriod === 1 ? '' : 's'} created` : empty || s.apps === 0 ? 'No apps created yet' : !wide ? `${number(s.apps)} app${s.apps === 1 ? '' : 's'} built` : `${number(s.creators)} ${s.creators === 1 ? 'person' : 'people'} built ${number(s.apps)} app${s.apps === 1 ? '' : 's'}${avgActions !== null ? ` · ${number(avgActions)} actions per app on average` : ''}`}
       </p>
     </Card>
   );

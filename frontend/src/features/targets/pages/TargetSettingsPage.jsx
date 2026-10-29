@@ -249,7 +249,7 @@ function TargetSettingsPage() {
       )}
 
       {/* the numbers at a glance */}
-      <div className="stagger grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="stagger grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
         <KpiCard accent="var(--c-c1)" label="Campaigns" value={loading && !campaigns ? null : visible.length} hint="Running in the last 14 days" />
         <KpiCard accent="var(--c-c4)" label="Ad sets" value={loading && !campaigns ? null : adSetCount} hint={`${setCount} with a target set`} />
         <KpiCard accent="var(--c-c2)" label="Spend" value={loading && !campaigns ? null : totalSpend} format={money} hint={windowLabel} />

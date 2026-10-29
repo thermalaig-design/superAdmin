@@ -58,7 +58,7 @@ function TopBar({ onOpenMenu }) {
   const onLeadList = pathname === '/campaign-leads' || pathname === '/otp-not-login' || pathname === '/new-apps' || pathname.startsWith('/registrations'); // these pages put their Back link, search and period here (see CampaignLeadsPage, RegistrationsPage)
   return (
     <header className="sticky border-2 top-0 z-20 flex h-16 items-center justify-between  border-gray-100 bg-white px-3 sm:px-6 lg:px-10 mx-1">
-      <div className={`flex min-w-0 flex-1 items-center gap-2 pr-4 sm:gap-3 sm:pr-8 ${onTargets ? "xl:justify-center" : ""}`}>
+      <div className={`flex min-w-0 flex-1 items-center gap-2 pr-2 sm:gap-3 sm:pr-8 ${onDashboard ? '' : 'overflow-hidden'} ${onTargets ? "xl:justify-center" : ""}`}>
         {/* Phones only: opens the drawer. On large screens the sidebar has its own collapse button. */}
         <button
           type="button"
@@ -75,7 +75,7 @@ function TopBar({ onOpenMenu }) {
             {/* the settings pages have no other way back, so the button lives here */}
             {onSetTarget && (
               <div className="shrink-0">
-                <BackLink to="/targets" label="Back to Targets and Scorecard" button buttonText="Back" />
+                <BackLink to="/targets" label="Back to Targets and Scorecard" button buttonText="Back" compact />
               </div>
             )}
             {onSetTarget && <span className="hidden h-6 w-px bg-gray-200 xl:block" aria-hidden="true" />}
@@ -114,7 +114,7 @@ function TopBar({ onOpenMenu }) {
         >
           {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
         </button>
-        <button type="button" className={roundButton} aria-label="Notifications" title="Notifications">
+        <button type="button" className={`${roundButton} max-[379px]:hidden`} aria-label="Notifications" title="Notifications">
           <BellIcon />
         </button>
         <button
