@@ -1,33 +1,21 @@
 import { useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import PeriodFilter from '../../../components/PeriodFilter';
 
 import PlatformCard, { PlatformTile } from '../components/PlatformCard';
 import Scorecard from '../components/Scorecard';
 import StatTile from '../components/StatTile';
 import StatusLegend from '../components/StatusLegend';
+import { useTargetCampaigns, useTargetOverview } from '../hooks/useTargetCampaigns';
 import { useTargets } from '../hooks/useTargets';
 import { useTargetsView } from '../hooks/useTargetsView';
-import { CAMPAIGNS, PERIODS } from '../utils/sampleData';
-import { todayInBusinessTz } from '../../../utils/businessDate';
-import { buildRows, count, money, overallVerdict, share, STATUS } from '../utils/targetMath';
+import { buildRows, count, money, overallVerdict, spendMoney, STATUS } from '../utils/targetMath';
 
 const card = 'rounded-2xl border border-gray-200 bg-white p-5 shadow-[0_1px_3px_rgba(20,33,61,0.06)]';
 const gradientButton =
   'inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-(--c-grad-from) via-(--c-grad-via) to-(--c-grad-to) px-4 text-sm font-semibold text-white shadow-[0_2px_8px_rgba(15,120,110,0.35)] transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-accent)';
 
 const PLATFORM_FILTERS = [{ value: null, label: 'All' }, { value: 'Meta', label: 'Meta' }, { value: 'Google', label: 'Google' }];
-
-/** The Registrations page for a Targets period (it knows today / 7d / 30d / custom, so 14 days goes as a custom range). */
-function registrationsLink(period) {
-  if (period === 'today') return '/registrations?range=today';
-  if (period === 'month') return '/registrations?range=30d';
-  if (period === '14d') {
-    const to = todayInBusinessTz();
-    const from = new Date(Date.parse(`${to}T00:00:00Z`) - 13 * 86400000).toISOString().slice(0, 10);
-    return `/registrations?range=custom&from=${from}&to=${to}`;
-  }
-  return '/registrations?range=7d';
-}
 
 const scrollToId = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
@@ -39,16 +27,20 @@ function TargetsPage() {
   const { targets } = useTargets();
   const navigate = useNavigate();
   const { campaignId } = useParams();
-  const selectedId = CAMPAIGNS.some(({ id }) => id === campaignId) ? campaignId : null;
 
   const { hash, key } = useLocation();
   // period and the platform / colour filters are shared with the top bar menu
   const [view, setView] = useTargetsView();
   const { period, platform: platformFilter, status: statusFilter } = view;
+  const filter = { range: period, ...(period === 'custom' ? { from: view.from, to: view.to } : {}) };
   const setPlatformFilter = (platform) => setView({ platform });
   const setStatusFilter = (status) => setView({ status });
 
-  const { rows, data, totals } = useMemo(() => buildRows(period, targets), [period, targets]);
+  const { data: overview, error, loading } = useTargetOverview(filter);
+  const { data: savedCampaigns } = useTargetCampaigns();
+  const { rows, totals } = useMemo(() => buildRows(overview, savedCampaigns, targets.overall), [overview, savedCampaigns, targets.overall]);
+  const selectedId = rows.some(({ id }) => id === campaignId) ? campaignId : null;
+  const ready = Boolean(overview) && !loading;
 
   // the colour chips count the campaigns of the chosen platform
   const platformRows = platformFilter ? rows.filter((row) => row.platform === platformFilter) : rows;
@@ -74,52 +66,75 @@ function TargetsPage() {
     else navigate(`/targets/${id}`);
   };
 
-  const verdict = overallVerdict(totals.costPerApp, targets.overall);
-  const change = data.registrationsChange;
+  const verdict = ready ? overallVerdict(totals.costPerApp, targets.overall) : { text: 'Loading', status: null };
+  const change = overview?.registrationsChange ?? null;
+  const missingCampaigns = Object.entries(overview?.apps?.unassignedCampaign ?? {}).filter(([, value]) => value > 0);
+  const cost = (value) => `${totals.approximate && value !== null ? '≈ ' : ''}${money(value)}`;
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
+      {error && (
+        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+          {error}
+        </p>
+      )}
+
       {/* header */}
       <header className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-3xl font-bold tracking-tight">Targets and Scorecard</h1>
-            <span className="rounded-full bg-(--c-accent-soft) px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-(--c-link)">Sample data</span>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-(--c-text-2)" title="Change the period from the top bar">
-            {PERIODS.find(({ value }) => value === period)?.label}
-          </span>
           <Link to="/targets/set-target" onClick={() => setView({ platform: null })} className={gradientButton}>
             Set Targets <span aria-hidden="true">→</span>
           </Link>
         </div>
       </header>
 
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <p className="text-sm text-(--c-text-3)">For the selected date range</p>
+        <PeriodFilter filter={filter} onChange={({ range, from, to }) => setView({ period: range, from, to })} />
+      </div>
+      {ready && totals.approximate && (
+        <p className="text-xs text-(--c-muted)">Ad spend and clicks are daily totals ({overview.period.spendFrom} to {overview.period.spendTo}). Apps follow the selected hours, so Cost/App is approximate (≈).</p>
+      )}
+
       {/* five headline cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <StatTile label="Spend" value={money(totals.spend)} tip="Money spent on ads in this period, across all campaigns." />
-        <StatTile
-          label="Registrations"
-          value={count(totals.registrations)}
-          tip="People who registered in the app after seeing an ad."
-          to={registrationsLink(period)}
-          action="See who registered"
-        >
-          <b style={{ color: change >= 0 ? 'var(--c-good)' : 'var(--c-bad-text)' }}>
-            {change >= 0 ? '↑' : '↓'} {Math.abs(change)}%
-          </b>{' '}
-          vs the period before
+        <StatTile label="Spend" value={ready ? spendMoney(totals.spend) : '…'} tip="Total INR ad spend. Meta + Google = total spend.">
+          {ready && ['Meta', 'Google'].map((platform) => (
+            <span key={platform} className="mt-1 flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5"><PlatformTile platform={platform} className="h-4 w-4 rounded [&_svg]:h-3 [&_svg]:w-3" />{platform}</span>
+              <b className="tabular-nums">{spendMoney(totals.spendByPlatform[platform])}</b>
+            </span>
+          ))}
         </StatTile>
-        <StatTile label="Cost / Registration" value={money(totals.costPerRegistration)} tip="Spend ÷ registrations. Useful to know, but it is not the target." />
-        <StatTile label="Business apps created" value={count(totals.apps)} tip="Registered users who went on to build a business app.">
-          {share(totals.apps, totals.registrations)} of registered users built one
+        <StatTile
+          label="Clicks"
+          value={ready ? count(totals.registrations) : '…'}
+          tip="Total clicks on the ads in this period."
+        >
+          {change === null ? (
+            'No data for the period before'
+          ) : (
+            <>
+              <b style={{ color: change >= 0 ? 'var(--c-good)' : 'var(--c-bad-text)' }}>
+                {change >= 0 ? '↑' : '↓'} {Math.abs(change)}%
+              </b>{' '}
+              vs the period before
+            </>
+          )}
+        </StatTile>
+        <StatTile label="Cost / Click" value={ready ? money(totals.costPerRegistration) : '…'} tip="Spend ÷ clicks. Useful to know, but it is not the target." />
+        <StatTile label="Business apps created" value={ready ? count(totals.apps) : '…'} tip="Business apps (Trust rows) created in this range by Meta/Google owners. First ad lead before app creation, otherwise the member's source. Includes apps whose exact campaign is not tracked. Organic/other sources are excluded.">
+          {ready && <>Meta {count(overview.apps.byPlatform.Meta)} · Google {count(overview.apps.byPlatform.Google)}<br />From paid ad sources</>}
         </StatTile>
         <StatTile
           featured
           label="★ Cost / App"
-          value={money(totals.costPerApp)}
+          value={ready ? cost(totals.costPerApp) : '…'}
           tip="Spend ÷ apps created. Lower is better. This is the number the whole page is about."
           onClick={() => scrollToId('platform-vs-target')}
           action="See cost per app by platform"
@@ -168,7 +183,14 @@ function TargetsPage() {
           </div>
         </div>
 
-        {shown.length === 0 ? (
+        {ready && missingCampaigns.length > 0 && (
+          <p className="mt-4 rounded-xl bg-(--c-page) px-3 py-2 text-xs text-(--c-text-3)">
+            Campaign tracking missing: {missingCampaigns.map(([platform, value]) => `${platform} ${count(value)} apps`).join(' · ')}. Included in the total above; campaign Cost/App and colours stay blank until the campaign is known.
+          </p>
+        )}
+        {!ready ? (
+          <div className="mt-5 h-40 animate-pulse rounded-2xl bg-gray-100" />
+        ) : shown.length === 0 ? (
           <p className="mt-5 rounded-xl border border-dashed border-gray-300 px-4 py-10 text-center text-sm text-(--c-muted)">
             No campaign matches this choice right now. Pick another platform or colour.
           </p>
@@ -188,7 +210,9 @@ function TargetsPage() {
           <p className="text-xs text-(--c-muted)">Click a column name to sort · click the pencil to edit a target</p>
         </div>
         <div className="mt-4">
-          {shown.length === 0 ? (
+          {!ready ? (
+            <div className="h-40 animate-pulse rounded-2xl bg-gray-100" />
+          ) : shown.length === 0 ? (
             <p className="rounded-xl border border-dashed border-gray-300 px-4 py-10 text-center text-sm text-(--c-muted)">
               No campaign matches this choice. Change the platform or colour above to see more.
             </p>
@@ -208,7 +232,7 @@ function TargetsPage() {
         </Link>
       </div>
 
-      <p className="text-xs text-(--c-muted)">All numbers are examples to show the design. Real numbers will appear once data flows into the panel.</p>
+      <p className="text-xs text-(--c-muted)">Spend and clicks: ad platforms' daily records. Apps created: actual business apps created in this range, attributed once to the owner's first lead or member source. Cost/App = spend ÷ apps created; installs and logins are separate.</p>
     </div>
   );
 }

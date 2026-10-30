@@ -15,6 +15,7 @@ import { periodTitle } from '../../trust-insights/utils/periodTitle';
 import { buildActivitySeries } from '../../trust-insights/utils/trustSeries';
 import CampaignTable from '../components/CampaignTable';
 import CardDetails from '../components/CardDetails';
+import CompareModal from '../components/CompareModal';
 // import LeadConversion from '../components/LeadConversion'; // Lead Mix & Conversion card
 import MostActiveApps from '../components/MostActiveApps';
 import ReportSection from '../components/ReportSection';
@@ -178,7 +179,7 @@ function DashboardPage() {
         { label: 'Google', value: t.leadsBySource.google, color: COLORS.google },
         ...(t.leadsBySource.other ? [{ label: 'Other', value: t.leadsBySource.other, color: COLORS.other }] : []),
       ],
-      hint: !sc && t ? `Total ${number(t.leads)} · ${number(t.leadsToday)} today` : undefined,
+      hint: !sc && t ? `Total ${number(t.leads)} · ${number(t.leadsToday)} in last 24 hours` : undefined,
       ...select('leads'),
     },
     {
@@ -199,7 +200,7 @@ function DashboardPage() {
       accent: 'var(--c-good)',
       label: 'New Apps',
       parts: [{ value: number(sc ? sc.trustsInPeriod : t?.trustsInPeriod) }],
-      hint: !sc && t ? `Total ${number(t.trusts)} · ${number(t.trustsToday)} today` : undefined,
+      hint: !sc && t ? `Total ${number(t.trusts)} · ${number(t.trustsToday)} in last 24 hours` : undefined,
       ...select('apps'),
     },
     {
@@ -251,6 +252,8 @@ function DashboardPage() {
   // const conversionRate = conversion?.withMobile ? Math.round((conversion.converted / conversion.withMobile) * 100) : null;
   const stillActive = (s) => (s?.creators ? `${formatPercent(percentOf(s.activeCreators, s.creators))}%` : '—');
   const initialLoad = loading && !data;
+  const [compareOpen, setCompareOpen] = useState(false);
+  const periodText = filter.range === 'custom' ? `${filter.from} to ${filter.to}` : { '24h': 'Last 24 Hours', '7d': 'Last 7 Days', '30d': 'Last 30 Days' }[filter.range];
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -264,6 +267,15 @@ function DashboardPage() {
         <div>
           <h2 className="text-lg font-semibold">Platform Overview</h2>
           <p className="mt-1 text-sm text-(--c-text-3)">For the selected date range</p>
+          <button
+            type="button"
+            onClick={() => setCompareOpen(true)}
+            disabled={!data}
+            className="mt-3 inline-flex h-9 cursor-pointer items-center gap-2 rounded-full bg-gradient-to-r from-(--c-grad-from) via-(--c-grad-via) to-(--c-grad-to) px-4 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <ChartIcon />
+            Compare All Sources
+          </button>
         </div>
         <PeriodFilter filter={filter} onChange={setFilter} />
       </div>
@@ -271,6 +283,8 @@ function DashboardPage() {
       <section className="mt-4">
         <StatCards stats={stats} loading={initialLoad} />
       </section>
+
+      {compareOpen && <CompareModal sources={data?.sources} adSpend={data?.adSpend} loading={loading} filter={filter} onFilterChange={setFilter} periodLabel={periodText} onClose={() => setCompareOpen(false)} />}
 
       <div className="mt-5">
         <SourceFilterBar

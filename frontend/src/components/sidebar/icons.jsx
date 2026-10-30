@@ -82,6 +82,14 @@ export const CampaignIcon = () => (
   </svg>
 );
 
+export const PageDirectoryIcon = () => (
+  <svg {...base}>
+    <path d="M6 3h9l4 4v14H6z" />
+    <path d="M14 3v5h5" />
+    <path d="M9 13h7M9 17h7" />
+  </svg>
+);
+
 export const AppsIcon = () => (
   <svg {...base}>
     <rect x="3" y="3" width="7" height="7" rx="1.5" />

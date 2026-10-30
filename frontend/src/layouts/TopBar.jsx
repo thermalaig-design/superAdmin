@@ -2,7 +2,7 @@ import { useLocation } from 'react-router-dom';
 
 import { SidebarToggleIcon } from '../components/sidebar/icons';
 import { useTheme } from '../hooks/useTheme';
-import TargetsNav, { TargetsPeriod } from '../features/targets/components/TargetsNav';
+import TargetsNav from '../features/targets/components/TargetsNav';
 import BackLink from '../components/BackLink';
 import ReportsNav from './ReportsNav';
 
@@ -102,7 +102,6 @@ function TopBar({ onOpenMenu }) {
             <div className="xl:hidden">
               <TargetsNav variant="compact" />
             </div>
-            {!onSetTarget && <TargetsPeriod />}
           </>
         )}
         <button

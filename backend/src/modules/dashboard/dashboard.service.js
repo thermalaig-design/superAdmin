@@ -76,6 +76,48 @@ function leadsBySource(leads) {
     return counts;
 }
 
+// Google campaigns whose leads count as "Google Click" (leadExpense.campaign_id); every other Google campaign is "Google Ads".
+const GOOGLE_CLICK_CAMPAIGNS = new Set(['24327025615', '24371490895']);
+
+/**
+ * Ad spend per lead source in [start, end) from leadExpense (one row per campaign per day, so the days touched by the range are summed whole).
+ * Returns { meta, google, googleclick } in rupees, plus the campaigns that spent money:
+ * campaigns: [{ id, name, source, status, spend }], biggest spend first within each source.
+ */
+async function getAdSpend(start, end) {
+    const from = localDayKey(start);
+    const to = localDayKey(new Date(end).getTime() - 1);
+    const { data, error } = await supabase
+        .from('leadExpense')
+        .select('platform, campaign_id, campaign_name, campaign_status, date, cost_inr')
+        .gte('date', from)
+        .lte('date', to)
+        .order('date', { ascending: false })
+        .limit(20000);
+    if (error) throw error;
+
+    const campaigns = new Map();
+    data.forEach((row) => {
+        const platform = String(row.platform ?? '').toLowerCase();
+        if (platform !== 'meta' && platform !== 'google') return;
+        const source = platform === 'google' && GOOGLE_CLICK_CAMPAIGNS.has(String(row.campaign_id)) ? 'googleclick' : platform;
+        // rows come newest first: the first one of a campaign gives its current name and status
+        const entry = campaigns.get(row.campaign_id) ?? { id: row.campaign_id, name: row.campaign_name, source, status: row.campaign_status, spend: 0 };
+        entry.spend += Number(row.cost_inr) || 0;
+        campaigns.set(row.campaign_id, entry);
+    });
+
+    const list = [...campaigns.values()].filter((campaign) => campaign.spend > 0).map((campaign) => ({ ...campaign, spend: Math.round(campaign.spend * 100) / 100 }));
+    const totals = { meta: 0, google: 0, googleclick: 0 };
+    list.forEach((campaign) => {
+        totals[campaign.source] += campaign.spend;
+    });
+    Object.keys(totals).forEach((key) => {
+        totals[key] = Math.round(totals[key] * 100) / 100;
+    });
+    return { ...totals, campaigns: list.sort((x, y) => y.spend - x.spend) };
+}
+
 /** Counts per local day (first to last day of the range) and per hour of the day, for the graphs. */
 function buildSeries(timestamps, { firstDay, lastDay }) {
     const perDay = new Map();
@@ -97,7 +139,7 @@ function buildSeries(timestamps, { firstDay, lastDay }) {
  * the busiest apps, and where leads come from and how many became members. Only counts and small lists are sent.
  */
 export async function getDashboard({ start, end, firstDay, lastDay, todayStart }) {
-    const [members, trusts, activity, pageRoutes, leads, totals, activeApps, loginIdentities] = await Promise.all([
+    const [members, trusts, activity, pageRoutes, leads, totals, activeApps, loginIdentities, adSpend] = await Promise.all([
         fetchPeriodRows('Members', 'created_at, members_id, Name, Mobile, source, sub_source, campaign_name', 'members_id', start, end),
         fetchPeriodRows('Trust', 'created_at, id, superuser_id', 'id', start, end),
         fetchPeriodRows('page_activity', 'created_at, id, trust_id, page_id, user_reg_id, members_id', 'id', start, end),
@@ -116,6 +158,7 @@ export async function getDashboard({ start, end, firstDay, lastDay, todayStart }
         ]),
         getMostActiveApps({ start, end }),
         fetchLoginIdentities(),
+        getAdSpend(start, end),
     ]);
     const [memberTotal, appDownloaded, memberToday, trustTotal, trustToday, leadTotal, leadToday, setuLogins, pwaLogins] = totals.map((r) => unwrap(r).count);
 
@@ -180,5 +223,6 @@ export async function getDashboard({ start, end, firstDay, lastDay, todayStart }
         ...leadSections(reportLeads, trace), // funnel, campaigns, leadChannels, leadConversion for all leads
         sources: sourceQuality(reportLeads, trace).map((source) => ({ ...source, cards: sourceCards[source.key] })),
         activeApps,
+        adSpend,
     };
 }

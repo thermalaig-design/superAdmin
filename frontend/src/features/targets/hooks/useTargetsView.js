@@ -5,7 +5,7 @@ import { useSyncExternalStore } from 'react';
  * read and change it, so choosing "Meta" in the menu filters the page. Kept for this browser tab (sessionStorage).
  */
 const STORAGE_KEY = 'setu:targets:view';
-const DEFAULT_VIEW = { period: '7d', platform: null, status: null };
+const DEFAULT_VIEW = { period: '7d', from: undefined, to: undefined, platform: null, status: null };
 
 const listeners = new Set();
 let lastRaw;
@@ -22,6 +22,8 @@ function getSnapshot() {
     lastRaw = raw;
     try {
       lastValue = { ...DEFAULT_VIEW, ...JSON.parse(raw) };
+      lastValue.period = { today: '24h', month: '30d', '14d': '7d' }[lastValue.period] ?? lastValue.period;
+      if (!['24h', '7d', '30d', 'custom'].includes(lastValue.period)) lastValue.period = '7d';
     } catch {
       lastValue = DEFAULT_VIEW;
     }

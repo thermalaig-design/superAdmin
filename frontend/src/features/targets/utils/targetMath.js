@@ -1,5 +1,3 @@
-import { CAMPAIGNS, fetchTargetData } from './sampleData';
-
 /** "₹14,000". Small amounts keep one decimal ("₹18.9"), everything from ₹20 up is whole rupees. */
 export function money(value) {
   if (value === null || value === undefined || !Number.isFinite(value)) return '—';
@@ -7,9 +5,12 @@ export function money(value) {
   return `₹${rounded.toLocaleString('en-IN')}`;
 }
 
+/** Preserve paise so the platform spend breakdown adds up to the displayed total. */
+export const spendMoney = (value) => Number.isFinite(value) ? `₹${value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—';
+
 export const count = (value) => (value === null || value === undefined ? '–' : value.toLocaleString('en-IN'));
 
-const divide = (a, b) => (b > 0 && a !== null ? a / b : null);
+const divide = (a, b) => (b > 0 && Number.isFinite(a) ? a / b : null);
 
 /** Green: at or below target. Yellow: up to 2x target. Red: above 2x, or money spent and no app made. */
 export const STATUS = {
@@ -42,7 +43,8 @@ export function describeCampaign(campaign, raw, target, adSetTargets = {}) {
     costPerRegistration: divide(raw.spend, raw.registrations),
     costPerLogin: divide(raw.spend, raw.logins),
     costPerApp,
-    status: statusOf(costPerApp, target, raw.spend),
+    appsConnected: raw.apps !== null && raw.apps !== undefined,
+    status: raw.apps == null ? null : statusOf(costPerApp, target, raw.spend),
     adSets: (raw.adSets ?? []).map((adSet) => {
       const adSetInfo = campaign.adSets?.find(({ id }) => id === adSet.id) ?? {};
       const adSetTarget = adSetTargets[adSet.id]?.target ?? target;
@@ -54,37 +56,54 @@ export function describeCampaign(campaign, raw, target, adSetTargets = {}) {
         costPerRegistration: divide(adSet.spend, adSet.registrations),
         costPerLogin: divide(adSet.spend, adSet.logins),
         costPerApp: adSetCostPerApp,
-        status: statusOf(adSetCostPerApp, adSetTarget, adSet.spend),
+        status: adSet.apps == null || adSet.spend == null ? null : statusOf(adSetCostPerApp, adSetTarget, adSet.spend),
       };
     }),
   };
 }
 
-export function buildRows(period, targets) {
-  const data = fetchTargetData(period);
-  const rows = CAMPAIGNS.map((campaign) => {
-    const raw = data.campaigns.find((item) => item.id === campaign.id);
-    return describeCampaign(campaign, raw, targets.campaigns[campaign.id].target, targets.campaigns[campaign.id].adSets);
+/**
+ * The scorecard rows from the server's overview (leadExpense) and the campaigns with their saved targets (adset_targets).
+ * A campaign's target is the average of its ad sets' saved targets; without any it is the overall target.
+ */
+export function buildRows(overview, savedCampaigns, overallTarget) {
+  const rows = (overview?.campaigns ?? []).map((campaign) => {
+    const saved = savedCampaigns?.find(({ id }) => id === campaign.id);
+    const adSetTargets = Object.fromEntries([...(campaign.savedTargets ?? []), ...(saved?.adSets ?? [])].filter((adSet) => adSet.saved).map((adSet) => [adSet.id, adSet.saved]));
+    const values = Object.values(adSetTargets).map(({ target }) => target).filter((target) => target > 0);
+    const target = values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : overallTarget;
+
+    const raw = {
+      spend: campaign.spend,
+      installs: null,
+      registrations: campaign.registrations,
+      logins: null,
+      apps: campaign.apps ?? null,
+      knownApps: campaign.knownApps ?? 0,
+      appsIncomplete: campaign.appsIncomplete,
+      unassignedPlatformApps: campaign.unassignedPlatformApps ?? 0,
+      approximate: overview.period?.dailySpendApproximate ?? false,
+      adSets: (campaign.adSets ?? []).map((adSet) => ({ ...adSet, installs: null, logins: null })),
+    };
+    return describeCampaign({ id: campaign.id, name: campaign.name, platform: campaign.platform }, raw, target, adSetTargets);
   });
 
   const sum = (key) => rows.reduce((total, row) => total + (row[key] ?? 0), 0);
   const total = {
-    spend: sum('spend'),
-    installs: sum('installs'),
-    registrations: sum('registrations'),
-    apps: sum('apps'),
+    spend: sum('spend'), installs: null, registrations: sum('registrations'), apps: overview?.apps?.total ?? null,
+    approximate: overview?.period?.dailySpendApproximate ?? false,
+    spendByPlatform: Object.fromEntries(['Meta', 'Google'].map((platform) => [platform, rows.filter((row) => row.platform === platform).reduce((value, row) => value + row.spend, 0)])),
   };
   const costPerApp = divide(total.spend, total.apps);
 
   return {
     rows,
-    data,
     totals: {
       ...total,
       costPerRegistration: divide(total.spend, total.registrations),
       costPerApp,
-      target: targets.overall,
-      status: statusOf(costPerApp, targets.overall, total.spend),
+      target: overallTarget,
+      status: total.apps === null ? null : statusOf(costPerApp, overallTarget, total.spend),
     },
   };
 }

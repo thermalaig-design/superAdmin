@@ -1,4 +1,5 @@
-const DAY_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
 
 // Day boundaries follow the business timezone (default IST, UTC+5:30), not the server's.
 const getOffsetMs = () => Number(process.env.APP_TZ_OFFSET_MINUTES ?? 330) * 60 * 1000;
@@ -9,6 +10,13 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 /** UTC ms of local midnight for the day containing `timestamp`. */
 export const startOfLocalDay = (timestamp = Date.now()) =>
     Math.floor((timestamp + getOffsetMs()) / DAY_MS) * DAY_MS - getOffsetMs();
+
+/**
+ * UTC ms of the start of the "last 24 hours" window: the start of the local hour 23 hours ago, so the window is
+ * 24 whole local hours ending with the current (still running) hour, and each hour of the day appears once.
+ */
+export const startOfLast24Hours = (timestamp = Date.now()) =>
+    Math.floor((timestamp + getOffsetMs()) / HOUR_MS) * HOUR_MS - getOffsetMs() - 23 * HOUR_MS;
 
 /** UTC ms of local midnight for a YYYY-MM-DD string, or null if invalid. */
 function parseLocalDate(value) {
@@ -22,19 +30,24 @@ function parseLocalDate(value) {
  * Returns { error } for invalid input.
  */
 export function resolveRange({ range = '7d', from, to }) {
-    const todayStart = startOfLocalDay();
+    // The "today" figures follow the last 24 hours (see startOfLast24Hours), not the calendar day.
+    const todayStart = startOfLast24Hours();
+    const dayStart = startOfLocalDay();
     let firstDay;
-    let lastDay = todayStart;
+    let lastDay = dayStart;
 
     switch (range) {
-        case 'today':
+        case '24h':
+        case 'today': // old links
+            // One window of 24 hourly buckets: firstDay = lastDay = the window start, so the day-based end (lastDay + 1 day) is start + 24h.
             firstDay = todayStart;
+            lastDay = todayStart;
             break;
         case '7d':
-            firstDay = todayStart - 6 * DAY_MS;
+            firstDay = dayStart - 6 * DAY_MS;
             break;
         case '30d':
-            firstDay = todayStart - 29 * DAY_MS;
+            firstDay = dayStart - 29 * DAY_MS;
             break;
         case 'custom': {
             firstDay = parseLocalDate(from ?? '');
@@ -49,7 +62,7 @@ export function resolveRange({ range = '7d', from, to }) {
             break;
         }
         default:
-            return { error: 'range must be one of today, 7d, 30d, custom' };
+            return { error: 'range must be one of 24h, 7d, 30d, custom' };
     }
 
     return {
@@ -85,11 +98,11 @@ export function getCalendarPeriodStarts(now = Date.now()) {
     const daysSinceMonday = (local.getUTCDay() + 6) % 7;
 
     const toInstant = (y, m, d) => Date.UTC(y, m, d) - offset;
-    const today = toInstant(year, month, day);
+    const last24 = startOfLast24Hours(now);
 
     return {
-        today,
-        yesterday: today - DAY_MS,
+        today: last24, // the last 24 hours
+        yesterday: last24 - DAY_MS, // the 24 hours before that
         week: toInstant(year, month, day - daysSinceMonday),
         month: toInstant(year, month, 1),
         year: toInstant(year, 0, 1),

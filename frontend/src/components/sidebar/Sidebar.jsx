@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../../features/auth/services/authService';
 import { useTargetsView } from '../../features/targets/hooks/useTargetsView';
 import Logo from '../Logo';
-import { DashboardIcon, InsightsIcon, LogoutIcon, MarketingIcon, MembersIcon, SidebarToggleIcon, TargetIcon } from './icons';
+import { DashboardIcon, InsightsIcon, LogoutIcon, MarketingIcon, MembersIcon, PageDirectoryIcon, SidebarToggleIcon, TargetIcon } from './icons';
 
 const NAV_ITEMS = [
   { to: '/', also: ['/campaign-leads'], label: 'Dashboard', icon: DashboardIcon, end: true },
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { to: '/member-insights', label: 'Member Insights', icon: MembersIcon },
   { to: '/marketing', label: 'Marketing', icon: MarketingIcon },
   { to: '/app-templates', label: 'App Template', icon: DashboardIcon },
+  { to: '/page-directory', label: 'Page Directory', icon: PageDirectoryIcon },
   { to: '/targets', label: 'Targets', icon: TargetIcon }, // also highlighted on /targets/set-target
 ];
 

@@ -32,6 +32,7 @@ export async function apiGet(path, params = {}) {
 
 export const apiPost = (path, payload) => apiSend('POST', path, payload);
 export const apiPut = (path, payload) => apiSend('PUT', path, payload);
+export const apiPatch = (path, payload) => apiSend('PATCH', path, payload);
 export const apiDelete = (path) => apiSend('DELETE', path);
 
 async function apiSend(method, path, payload) {

@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useApiQuery } from '../../../hooks/useApiQuery';
 import { fetchDashboard } from '../services/dashboardService';
 
-const PRESETS = ['7d', '30d', 'today'];
+const PRESETS = ['7d', '30d', '24h'];
 
 export function useDashboard({ range, from, to }) {
   const result = useApiQuery(['dashboard', range, from ?? '', to ?? ''], () => fetchDashboard({ range, from, to }));

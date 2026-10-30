@@ -2,7 +2,7 @@ import { refresh } from '../../utils/cache.js';
 import { resolveRange } from '../../utils/dateRange.js';
 import { getDashboard } from './dashboard.service.js';
 
-const WARM_RANGES = ['7d', 'today', '30d'];
+const WARM_RANGES = ['7d', '24h', '30d'];
 const REFRESH_MS = 4 * 60 * 1000; // a little under the cache's fresh time, so the usual ranges are always ready
 
 /** Reloads the common date ranges into the cache, one after another. Cache keys match dashboard.controller.js. */

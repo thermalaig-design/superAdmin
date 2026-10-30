@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { CUSTOM_RANGE_START, todayInBusinessTz } from '../utils/businessDate';
 
 const RANGES = [
-  { value: 'today', label: 'Today' },
+  { value: '24h', label: 'Last 24 Hours' },
   { value: '7d', label: 'Last 7 Days' },
   { value: '30d', label: 'Last 30 Days' },
   { value: 'custom', label: 'Custom Range' },

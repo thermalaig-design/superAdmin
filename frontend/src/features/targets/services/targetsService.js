@@ -9,6 +9,12 @@ import { apiGet, apiPut } from '../../../lib/apiClient';
 export const fetchTargetCampaigns = () => apiGet('/targets/campaigns');
 
 /**
+ * GET /targets/overview (range: '24h' | '7d' | '30d' | 'custom', from/to for custom).
+ * Daily spend/clicks and apps created, with platform totals and explicit missing campaign attribution.
+ */
+export const fetchTargetOverview = (filter) => apiGet('/targets/overview', filter);
+
+/**
  * GET /targets/history  (window: 'today' | '14d' | '30d')
  * What each ad set cost and brought in over the window. Response data: { window, items: { 'campaignId:adSetId': { spend, leads, registrations,
  * logins, apps, costPerRegistration, costPerLogin, costPerApp } } }

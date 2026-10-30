@@ -9,7 +9,7 @@ function OverviewStats({ data, loading }) {
 
   const stats = [
     { marker: 'var(--c-c2)', label: 'Total Trusts', value: data?.totalTrusts?.toLocaleString('en-IN'), hint: 'All trusts created' },
-    { marker: 'var(--c-good)', label: 'Created Today', value: data?.createdToday?.toLocaleString('en-IN'), hint: 'Since midnight' },
+    { marker: 'var(--c-good)', label: 'Created (Last 24 Hours)', value: data?.createdToday?.toLocaleString('en-IN'), hint: 'Last 24 hours' },
     {
       marker: 'var(--c-c3)',
       label: 'Selected Period',

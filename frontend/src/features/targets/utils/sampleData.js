@@ -4,7 +4,7 @@
  */
 
 export const PERIODS = [
-  { value: 'today', label: 'Today', days: 1 },
+  { value: 'today', label: 'Last 24 hours', days: 1 }, // the key stays 'today' (saved view state); it means the last 24 hours
   { value: '7d', label: 'Last 7 days', days: 7 },
   { value: '14d', label: 'Last 14 days', days: 14 },
   { value: 'month', label: 'This month', days: 30 },

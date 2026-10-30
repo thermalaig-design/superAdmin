@@ -1,5 +1,7 @@
 import { supabase } from '../../config/supabase.js';
 import { traceLeadPeople } from '../marketing/leadStats.service.js';
+import { localDayKey, startOfLast24Hours } from '../../utils/dateRange.js';
+import { buildTargetOverview } from './targetsOverview.logic.js';
 
 const WINDOW_DAYS = 14;
 const PAGE = 1000;
@@ -15,7 +17,7 @@ const isoDay = (daysAgo) => new Date(Date.now() - daysAgo * 86400000).toISOStrin
 /** Every row of a query, a page at a time (Supabase returns 1000 at most). */
 async function fetchAll(build) {
     const rows = [];
-    for (let from = 0; from < 20 * PAGE; from += PAGE) {
+    for (let from = 0; ; from += PAGE) {
         const page = unwrap(await build().range(from, from + PAGE - 1));
         rows.push(...page);
         if (page.length < PAGE) break;
@@ -127,18 +129,20 @@ export async function saveAdSetTargets(items) {
     return { saved: rows.length };
 }
 
-const WINDOWS = { today: 0, '14d': 14, '30d': 30 };
+const WINDOWS = { '24h': 0, '14d': 14, '30d': 30 };
 const ratio = (a, b) => (b > 0 ? Math.round(a / b) : null);
 
 /**
- * What every ad set cost and brought in over a window (today, the last 14 or the last 30 days): { window, items: { 'campaign:adSet': { spend,
+ * What every ad set cost and brought in over a window (the last 24 hours, the last 14 or the last 30 days): { window, items: { 'campaign:adSet': { spend,
  * leads, registrations, logins, apps, costPerRegistration, costPerLogin, costPerApp } } }.
  * The ad spend is only known per campaign (leadExpense), so it is shared between a campaign's ad sets by how many leads each brought.
  * Registrations / logins / apps follow the leads of the window to their members, the way the dashboard does.
  */
 export async function getTargetHistory(window) {
     const days = WINDOWS[window] ?? 14;
-    const since = isoDay(days);
+    const last24 = window === '24h';
+    // Ad spend is only recorded per day, so the 24 hours take the spend from the day the window started on.
+    const since = last24 ? localDayKey(startOfLast24Hours()) : isoDay(days);
     const campaigns = await getTargetCampaigns();
     const ids = campaigns.map((campaign) => campaign.id);
     if (ids.length === 0) return { window, items: {} };
@@ -148,8 +152,12 @@ export async function getTargetHistory(window) {
     expense.forEach((row) => spend.set(row.campaign_id, (spend.get(row.campaign_id) ?? 0) + (Number(row.cost_inr) || 0)));
 
     const start = new Date();
-    start.setDate(start.getDate() - days);
-    start.setHours(0, 0, 0, 0);
+    if (last24) {
+        start.setTime(startOfLast24Hours());
+    } else {
+        start.setDate(start.getDate() - days);
+        start.setHours(0, 0, 0, 0);
+    }
     const leads = await fetchAll(() =>
         supabase.from('leads').select('id, mobile, campaign_id, adset_id, lead_received_at').in('campaign_id', ids).gte('lead_received_at', start.toISOString()).order('id')
     );
@@ -183,4 +191,43 @@ export async function getTargetHistory(window) {
         });
     });
     return { window, items };
+}
+
+const DAY_MS = 86400000;
+
+/**
+ * Daily INR spend/clicks plus business apps created in the dashboard's selected window.
+ * Apps use the creator's first lead before creation, falling back to Members source/campaign.
+ * Missing campaign tracking stays unassigned; never distribute Google apps by spend or clicks.
+ */
+export async function getTargetOverview({ start, end }) {
+    const from = localDayKey(start);
+    const to = localDayKey(new Date(end).getTime() - 1);
+    const days = Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS) + 1;
+    const previousFrom = new Date(Date.parse(`${from}T00:00:00Z`) - days * DAY_MS).toISOString().slice(0, 10);
+    const dailySpendApproximate = localDayKey(new Date(start).getTime() - 1) === from;
+    const [rows, previousRows, apps, leads] = await Promise.all([
+        fetchAll(() => supabase.from('leadExpense').select('campaign_id, campaign_name, platform, date, cost_inr, clicks, raw').gte('date', from).lte('date', to).order('date', { ascending: false }).order('id')),
+        dailySpendApproximate ? [] : fetchAll(() => supabase.from('leadExpense').select('platform, clicks').gte('date', previousFrom).lt('date', from).order('date', { ascending: false }).order('id')),
+        fetchAll(() => supabase.from('Trust').select('id, created_at, superuser:superuser_id(members_id, mobile)').gte('created_at', start).lt('created_at', end).order('id')),
+        fetchAll(() => supabase.from('leads').select('id, mobile, source, platform, campaign_id, campaign_name, adset_id, adset_name, lead_received_at').lt('lead_received_at', end).order('lead_received_at').order('id')),
+    ]);
+    const ownerIds = [...new Set(apps.map((app) => app.superuser?.members_id).filter(Boolean))];
+    const members = [];
+    for (let i = 0; i < ownerIds.length; i += 100) {
+        const ids = ownerIds.slice(i, i + 100);
+        members.push(...await fetchAll(() => supabase.from('Members').select('members_id, Mobile, source, campaign_name, created_at').in('members_id', ids).order('members_id')));
+    }
+    const result = buildTargetOverview({ rows, previousRows, apps, members, leads, period: { from: start, to: end, spendFrom: from, spendTo: to, dailySpendApproximate } });
+    const ids = result.campaigns.map((campaign) => campaign.id);
+    const saved = [];
+    for (let i = 0; i < ids.length; i += 100) {
+        const { data, error } = await supabase.from('adset_targets').select('*').in('campaign_id', ids.slice(i, i + 100));
+        if (error && !['42P01', 'PGRST205'].includes(error.code)) throw error;
+        saved.push(...(data ?? []));
+    }
+    result.campaigns.forEach((campaign) => {
+        campaign.savedTargets = saved.filter((row) => String(row.campaign_id) === campaign.id).map((row) => ({ id: row.adset_id, saved: savedShape(row) }));
+    });
+    return result;
 }

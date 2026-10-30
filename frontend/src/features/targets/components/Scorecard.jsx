@@ -5,14 +5,14 @@ import ScrollTable from '../../../components/ScrollTable';
 import { PlatformTile } from './PlatformCard';
 import { useEditPath } from '../hooks/useEditPath';
 import { useTargetsView } from '../hooks/useTargetsView';
-import { count, money, STATUS } from '../utils/targetMath';
+import { count, money, spendMoney, STATUS } from '../utils/targetMath';
 
 const COLUMNS = [
   { key: 'name', label: 'Campaign' },
   { key: 'spend', label: 'Spend' },
   { key: 'installs', label: 'Installs' },
-  { key: 'registrations', label: 'Registrations' },
-  { key: 'costPerRegistration', label: 'CPR', tip: 'Cost per registration: spend ÷ registrations' },
+  { key: 'registrations', label: 'Clicks' },
+  { key: 'costPerRegistration', label: 'CPC', tip: 'Cost per click: spend ÷ clicks' },
   { key: 'apps', label: 'Apps created' },
   { key: 'costPerApp', label: '★ Cost/App', tip: 'Cost per app: spend ÷ apps created. Lower is better.' },
   { key: 'target', label: 'Target' },
@@ -130,12 +130,12 @@ function Scorecard({ rows, totals, flashId }) {
                     {canExpand ? <span className="text-left">{row.name}<span className="ml-2 text-xs text-(--c-muted)">{isOpen ? '▲' : '▼'}</span></span> : row.name}
                   </div>
                 </td>
-                <td className="px-3 py-3 tabular-nums">{money(row.spend)}</td>
+                <td className="px-3 py-3 tabular-nums">{spendMoney(row.spend)}</td>
                 <td className="px-3 py-3 tabular-nums">{count(row.installs)}</td>
                 <td className="px-3 py-3 tabular-nums">{count(row.registrations)}</td>
                 <td className="px-3 py-3 tabular-nums">{money(row.costPerRegistration)}</td>
-                <td className="px-3 py-3 tabular-nums">{count(row.apps)}</td>
-                <td className="px-3 py-3 font-bold tabular-nums" style={{ color }}>{money(row.costPerApp)}</td>
+                <td className="px-3 py-3 tabular-nums" title={row.appsIncomplete ? `Campaign tracking missing for ${row.unassignedPlatformApps} ${row.platform} apps` : undefined}>{count(row.apps)}</td>
+                <td className="px-3 py-3 font-bold tabular-nums" style={{ color }}>{row.approximate && row.costPerApp !== null ? '≈ ' : ''}{money(row.costPerApp)}</td>
                 <td className="px-3 py-3 tabular-nums">
                   <span className="flex items-center gap-1">
                     {money(row.target)}
@@ -149,12 +149,12 @@ function Scorecard({ rows, totals, flashId }) {
                   <td className="px-3 py-2 pl-12 font-medium">
                     <span className="flex items-center gap-2"><span className="ml-1 h-1.5 w-1.5 shrink-0 rounded-full bg-(--c-muted)" aria-hidden="true" />{adSet.name}</span>
                   </td>
-                  <td className="px-3 py-2 tabular-nums">{money(adSet.spend)}</td>
+                  <td className="px-3 py-2 tabular-nums">{spendMoney(adSet.spend)}</td>
                   <td className="px-3 py-2 tabular-nums">{count(adSet.installs)}</td>
                   <td className="px-3 py-2 tabular-nums">{count(adSet.registrations)}</td>
                   <td className="px-3 py-2 tabular-nums">{money(adSet.costPerRegistration)}</td>
                   <td className="px-3 py-2 tabular-nums">{count(adSet.apps)}</td>
-                  <td className="px-3 py-2 font-bold tabular-nums" style={{ color: adSet.status ? STATUS[adSet.status].color : undefined }}>{money(adSet.costPerApp)}</td>
+                  <td className="px-3 py-2 font-bold tabular-nums" style={{ color: adSet.status ? STATUS[adSet.status].color : undefined }}>{row.approximate && adSet.costPerApp !== null ? '≈ ' : ''}{money(adSet.costPerApp)}</td>
                   <td className="px-3 py-2 tabular-nums">
                     <span className="flex items-center gap-1">
                       {money(adSet.target)}
@@ -171,12 +171,12 @@ function Scorecard({ rows, totals, flashId }) {
         <tfoot>
           <tr className="border-t-2 border-gray-300 bg-(--c-page) font-bold">
             <td className="px-3 py-3">All campaigns</td>
-            <td className="px-3 py-3 tabular-nums">{money(totals.spend)}</td>
+            <td className="px-3 py-3 tabular-nums">{spendMoney(totals.spend)}</td>
             <td className="px-3 py-3 tabular-nums">{count(totals.installs)}</td>
             <td className="px-3 py-3 tabular-nums">{count(totals.registrations)}</td>
             <td className="px-3 py-3 tabular-nums">{money(totals.costPerRegistration)}</td>
             <td className="px-3 py-3 tabular-nums">{count(totals.apps)}</td>
-            <td className="px-3 py-3 tabular-nums" style={{ color: totals.status ? STATUS[totals.status].color : undefined }}>{money(totals.costPerApp)}</td>
+            <td className="px-3 py-3 tabular-nums" style={{ color: totals.status ? STATUS[totals.status].color : undefined }}>{totals.approximate && totals.costPerApp !== null ? '≈ ' : ''}{money(totals.costPerApp)}</td>
             <td className="px-3 py-3 tabular-nums">
               <span className="flex items-center gap-1">
                 {money(totals.target)}

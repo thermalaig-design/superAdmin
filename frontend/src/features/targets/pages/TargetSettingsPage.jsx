@@ -15,7 +15,7 @@ const buttonBase = 'h-10 cursor-pointer whitespace-nowrap rounded-xl px-4 text-s
 const primary = `${buttonBase} bg-gradient-to-r from-(--c-grad-from) via-(--c-grad-via) to-(--c-grad-to) text-white shadow-[0_2px_8px_rgba(15,120,110,0.35)] hover:brightness-110`;
 const secondary = `${buttonBase} border border-gray-300 bg-white text-(--c-text-2) hover:bg-gray-50`;
 const WINDOWS = [
-  { value: 'today', label: 'Today' },
+  { value: '24h', label: 'Last 24 hours' },
   { value: '14d', label: 'Last 14 days' },
   { value: '30d', label: 'Last 30 days' },
 ];

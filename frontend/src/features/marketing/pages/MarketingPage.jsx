@@ -33,7 +33,7 @@ function MarketingPage() {
 
   const stats = [
     { marker: 'var(--c-c2)', label: 'Total Leads', value: number(data?.totalLeads), hint: 'All leads received' },
-    { marker: 'var(--c-good)', label: 'Leads Today', value: number(data?.leadsToday), hint: 'Since midnight' },
+    { marker: 'var(--c-good)', label: 'Leads (Last 24 Hours)', value: number(data?.leadsToday), hint: 'Last 24 hours' },
     {
       marker: 'var(--c-c3)',
       label: 'Selected Period',

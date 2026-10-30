@@ -4,7 +4,6 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import { CampaignIcon, InsightsIcon, MembersIcon, TargetIcon } from '../../../components/sidebar/icons';
 import { useTargetCampaigns } from '../hooks/useTargetCampaigns';
 import { useTargetsView } from '../hooks/useTargetsView';
-import { CAMPAIGNS, PERIODS } from '../utils/sampleData';
 import { STATUS } from '../utils/targetMath';
 import NavDropdown from './NavDropdown';
 import { PlatformTile } from './PlatformCard';
@@ -52,7 +51,7 @@ function CampaignLinks({ base, allLabel, allTo, onPick }) {
   const inSettings = pathname.startsWith('/targets/set-target');
   const onThisSection = base === '/targets' ? !inSettings : inSettings;
   const { data: running } = useTargetCampaigns(); // real campaigns, for the Set Targets menu
-  const list = base === '/targets' ? CAMPAIGNS : (running ?? []);
+  const list = running ?? [];
   return (
     <>
       <p className={heading}>Platform</p>
@@ -117,12 +116,16 @@ const SECTIONS = [
   { id: 'set', label: 'Set Targets', icon: SetTargetsIcon, render: (close) => <CampaignLinks base="/targets/set-target" allLabel="All targets" allTo="/targets/set-target" onPick={close} /> },
 ];
 
-/** "User Actions": opens the Registrations page (who registered, and what each person did), for the period chosen in the top bar. */
+/** Carry the page's date selection through to User Actions, including a custom range. */
 function UserActionsLink({ onPick }) {
   const [view] = useTargetsView();
-  const range = { today: 'today', month: '30d', '7d': '7d' }[view.period] ?? '7d';
+  const params = new URLSearchParams({ range: view.period });
+  if (view.period === 'custom') {
+    params.set('from', view.from);
+    params.set('to', view.to);
+  }
   return (
-    <Link to={`/registrations?range=${range}`} state={{ backLabel: 'Targets' }} onClick={onPick} className={`${linkTrigger}`}>
+    <Link to={`/registrations?${params}`} state={{ backLabel: 'Targets' }} onClick={onPick} className={`${linkTrigger}`}>
       <UserActionsIcon />
       <span className="whitespace-nowrap">User Actions</span>
     </Link>
@@ -137,7 +140,7 @@ function TargetsNav({ variant }) {
   const { data: running } = useTargetCampaigns();
   const inSettings = pathname.startsWith('/targets/set-target');
   useEffect(() => {
-    const platform = (inSettings ? (running ?? []) : CAMPAIGNS).find(({ id }) => id === campaignId)?.platform;
+    const platform = (running ?? []).find(({ id }) => id === campaignId)?.platform;
     if (platform) setView({ platform });
   }, [campaignId, inSettings, running, setView]);
 
@@ -166,34 +169,6 @@ function TargetsNav({ variant }) {
             <UserActionsLink onPick={close} />
           </div>
         )
-      }
-    </NavDropdown>
-  );
-}
-
-/** The period dropdown (right side of the top bar). */
-export function TargetsPeriod() {
-  const [view, setView] = useTargetsView();
-  const current = PERIODS.find(({ value }) => value === view.period) ?? PERIODS[1];
-  return (
-    <NavDropdown label={current.label} align="right" width="sm:w-48" bordered>
-      {(close) =>
-        PERIODS.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => {
-              setView({ period: value });
-              close();
-            }}
-            className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition ${
-              view.period === value ? 'bg-(--c-accent-soft) font-semibold text-(--c-link)' : 'text-(--c-text-2) hover:bg-(--c-accent-soft)'
-            }`}
-          >
-            {label}
-            {view.period === value && <span aria-hidden="true">✓</span>}
-          </button>
-        ))
       }
     </NavDropdown>
   );

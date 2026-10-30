@@ -1,5 +1,6 @@
 import { cached } from '../../utils/cache.js';
-import { getTargetCampaigns, getTargetHistory, saveAdSetTargets } from './targets.service.js';
+import { localDayKey, resolveRange } from '../../utils/dateRange.js';
+import { getTargetCampaigns, getTargetHistory, getTargetOverview, saveAdSetTargets } from './targets.service.js';
 
 const ALERTS = ['both', 'whatsapp', 'email', 'none'];
 const MISSING_TABLE = '42P01'; // Postgres: relation does not exist (sql/adset_targets.sql has not been run yet)
@@ -21,14 +22,32 @@ export async function fetchTargetCampaigns(_req, res) {
     }
 }
 
-/** What each ad set cost and brought in over Today / the last 14 days / the last 30 days (the "previous data" on the page). */
+/** What each ad set cost and brought in over the last 24 hours / the last 14 days / the last 30 days (the "previous data" on the page). */
 export async function fetchTargetHistory(req, res) {
     try {
-        const window = ['today', '14d', '30d'].includes(req.query.window) ? req.query.window : '14d';
+        const window = ['24h', '14d', '30d'].includes(req.query.window) ? req.query.window : '14d';
         return res.json({ success: true, data: await cached(`target-history:${window}`, () => getTargetHistory(window)) });
     } catch (error) {
         console.error('fetchTargetHistory failed:', error);
         return failure(res, error, 'Failed to load the previous data');
+    }
+}
+
+/** Spend, clicks and attributed apps, with the same range contract as the dashboard. */
+export async function fetchTargetOverview(req, res) {
+    try {
+        const selection = { ...req.query, range: req.query.range ?? req.query.period ?? '7d' };
+        if (selection.range === '14d') {
+            selection.range = 'custom';
+            selection.from = localDayKey(Date.now() - 13 * 86400000);
+            selection.to = localDayKey(Date.now());
+        }
+        const range = resolveRange(selection);
+        if (range.error) return res.status(400).json({ success: false, message: range.error });
+        return res.json({ success: true, data: await cached(`target-overview:v2:${JSON.stringify(range)}`, () => getTargetOverview(range)) });
+    } catch (error) {
+        console.error('fetchTargetOverview failed:', error);
+        return failure(res, error, 'Failed to load the targets overview');
     }
 }
 

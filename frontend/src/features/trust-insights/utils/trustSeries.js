@@ -25,7 +25,11 @@ export function describeBucket(granularity, from, lastDay) {
   return { label: fmt.dayAxis.format(from), title: `${fmt.dayAxis.format(from)} – ${fmt.dayTip.format(lastDay)}` };
 }
 
-const summarise = (granularity, buckets) => ({
+const hourOfDay = format({ hour: 'numeric', hourCycle: 'h23' });
+/** Hour of the day (0-23) of an instant, in the business timezone. */
+const localHour = (instant) => Number(hourOfDay.format(instant));
+
+const summarise =(granularity, buckets) => ({
   granularity,
   buckets,
   total: buckets.reduce((sum, b) => sum + b.count, 0),
@@ -36,7 +40,7 @@ const summarise = (granularity, buckets) => ({
  * Counts trusts per hour / day / week across the selected period, ready for the graph.
  *
  * `period.from` and `period.to` are the first and last day (instants of local midnight). Buckets that haven't
- * started yet are dropped, so "Today" ends at the current hour instead of trailing off into the future.
+ * started yet are dropped, so "Last 24 Hours" ends at the current hour instead of trailing off into the future.
  */
 export function buildCreationSeries(trusts, period, now) {
   if (!period) return summarise('day', []);
@@ -75,9 +79,12 @@ export function buildActivitySeries({ trend, byHour }, period, now) {
 
   let buckets;
   if (granularity === 'hour') {
-    buckets = byHour.map(({ hour, count }) => {
-      const from = start + hour * HOUR_MS;
-      return { from, count, ...describeBucket('hour', from, from) };
+    // 24 hourly buckets from the period start. A calendar day starts at hour 0; the "Last 24 Hours" window starts
+    // mid-day, so each bucket looks up the count of its own hour of the day.
+    const countOfHour = new Map(byHour.map(({ hour, count }) => [hour, count]));
+    buckets = Array.from({ length: 24 }, (_, i) => {
+      const from = start + i * HOUR_MS;
+      return { from, count: countOfHour.get(localHour(from)) ?? 0, ...describeBucket('hour', from, from) };
     });
   } else {
     const perBucket = granularity === 'day' ? 1 : 7;

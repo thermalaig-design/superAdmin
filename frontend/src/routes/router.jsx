@@ -87,6 +87,10 @@ const AppTemplatesPage = lazy(() =>
   import('../features/app-templates/pages/AppTemplatesPage')
 );
 
+const PageDirectoryPage = lazy(() =>
+  import('../features/page-directory/pages/PageDirectoryPage')
+);
+
 const lazyPage =(Component) => (
   <Suspense fallback={<div>Loading...</div>}>
     <Component />
@@ -155,6 +159,10 @@ export const router = createBrowserRouter([
           {
             path: '/app-templates',
             element: lazyPage(AppTemplatesPage),
+          },
+          {
+            path: '/page-directory',
+            element: lazyPage(PageDirectoryPage),
           },
           {
             path: '/registrations',

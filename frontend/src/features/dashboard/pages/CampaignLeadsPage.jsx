@@ -33,7 +33,7 @@ const PROGRESS = {
 const LEAD_PROGRESS = { label: 'Lead', style: 'lead' };
 
 const META_PLATFORMS = ['Facebook', 'Instagram'];
-const PERIOD_LABELS = { today: 'Today', '7d': 'Last 7 Days', '30d': 'Last 30 Days' };
+const PERIOD_LABELS = { '24h': 'Last 24 Hours', '7d': 'Last 7 Days', '30d': 'Last 30 Days' };
 
 const COLUMNS = 6;
 const BADGE = 'inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold';

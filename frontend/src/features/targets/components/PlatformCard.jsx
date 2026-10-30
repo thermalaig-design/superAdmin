@@ -5,7 +5,7 @@ import SourceIcon from '../../dashboard/components/SourceIcon';
 import { COLORS } from '../../marketing/utils/leadStats';
 import { useEditPath } from '../hooks/useEditPath';
 import { useTargetsView } from '../hooks/useTargetsView';
-import { money, STATUS } from '../utils/targetMath';
+import { count, money, spendMoney, STATUS } from '../utils/targetMath';
 
 const SEGMENTS = ['green', 'yellow', 'red'];
 const PLATFORM_STYLE = {
@@ -36,7 +36,7 @@ function PlatformCard({ row, selected, onSelect }) {
   const max = target * 3;
   const noApps = costPerApp === null;
   const beyond = !noApps && costPerApp > max;
-  const position = noApps ? (row.spend > 0 ? 100 : null) : Math.min(costPerApp / max, 1) * 100;
+  const position = noApps ? (row.spend > 0 && row.appsConnected ? 100 : null) : Math.min(costPerApp / max, 1) * 100;
   const tone = status ? STATUS[status] : null;
 
   const gap = noApps ? null : Math.round(((costPerApp - target) / target) * 100);
@@ -88,7 +88,7 @@ function PlatformCard({ row, selected, onSelect }) {
         <div>
           <p className="text-[0.7rem] font-semibold uppercase tracking-[0.06em] text-(--c-muted)">Cost per app</p>
           <p className="text-2xl font-bold leading-tight tabular-nums" style={{ color: tone?.color }}>
-            {money(costPerApp)}
+            {row.approximate && costPerApp !== null ? '≈ ' : ''}{money(costPerApp)}
           </p>
         </div>
         <div className="flex flex-col items-end gap-1.5">
@@ -108,6 +108,12 @@ function PlatformCard({ row, selected, onSelect }) {
           </p>
         </div>
       </div>
+
+      <p className="text-xs text-(--c-text-3)">
+        Spend <b className="tabular-nums">{spendMoney(row.spend)}</b> · Apps created <b className="tabular-nums">{count(row.apps)}</b>
+        {row.appsIncomplete && <span className="mt-1 block">Campaign tracking missing for {count(row.unassignedPlatformApps)} {row.platform} apps.</span>}
+        {!row.appsIncomplete && row.apps === 0 && row.spend > 0 && <span className="mt-1 block">No business app created in this range.</span>}
+      </p>
 
       {/* the bar with the marker */}
       <div>

@@ -1,5 +1,5 @@
 import { supabase } from '../../config/supabase.js';
-import { startOfLocalDay } from '../../utils/dateRange.js';
+import { startOfLast24Hours } from '../../utils/dateRange.js';
 import { getMemberLoginStats } from '../trust-insights/memberLogins.service.js';
 
 const MEMBER_COLUMNS = 'members_id, Name, Mobile, Email, "Company Name", trust_id, app_download, created_at';
@@ -577,7 +577,7 @@ export async function getMemberTrusts(memberId, { withLastActivity = false } = {
 
 /** Platform-wide numbers shown above the table (they don't change with the table's filters). */
 export async function getMemberSummary() {
-    const todayStart = new Date(startOfLocalDay()).toISOString();
+    const todayStart = new Date(startOfLast24Hours()).toISOString();
     const head = { count: 'exact', head: true };
 
     const [total, downloaded, today, latest] = await Promise.all([

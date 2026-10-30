@@ -14,7 +14,7 @@ import { SOURCES } from '../../dashboard/utils/sources';
 import SummaryCards from '../components/SummaryCards';
 import { useRegistrationCampaigns, useRegistrations, useRegistrationSummary } from '../hooks/useRegistrations';
 
-const PERIOD_LABELS = { today: 'Today', '7d': 'Last 7 Days', '30d': 'Last 30 Days' };
+const PERIOD_LABELS = { '24h': 'Last 24 Hours', '7d': 'Last 7 Days', '30d': 'Last 30 Days' };
 const COLUMNS = 6;
 const SOURCE_OPTIONS = [{ value: '', label: 'All sources' }, ...SOURCES.map((source) => ({ value: source.key, label: source.label }))];
 const STAGE_OPTIONS = [
@@ -38,7 +38,7 @@ function RegistrationsPage() {
 
   // opens on the period chosen on the Targets page
   const [period, setPeriod] = useState(() => ({
-    range: params.get('range') || 'today',
+    range: params.get('range') || '24h',
     from: params.get('from') || undefined,
     to: params.get('to') || undefined,
   }));

@@ -17,8 +17,8 @@ const ACTION_STYLES = {
 const ACTION_LABELS = { login: 'Login', logout: 'Logout', autologout: 'Auto logout' };
 
 const ACTION_PERIODS = [
-  { value: 'today', label: 'Today' },
-  { value: 'yesterday', label: 'Yesterday' },
+  { value: 'today', label: 'Last 24 Hours' }, // key 'today' is what the server sends; it counts the last 24 hours
+  { value: 'yesterday', label: 'Previous 24 Hours' },
   { value: 'week', label: 'This Week' },
   { value: 'month', label: 'This Month' },
   { value: 'year', label: 'This Year' },
