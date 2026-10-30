@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from 'react';
 
-import { matchesPerson, nextSort, number, sortRows, when } from '../utils/tableHelpers';
+import { firstDirection, matchesPerson, nextSort, number, sortRows, when } from '../utils/tableHelpers';
 import AppGroups from './AppGroups';
 import PageDonuts from './PageDonuts';
 
@@ -128,7 +128,80 @@ function CardDetails({ title, details, loading, error }) {
         <p className="mt-4 text-sm text-(--c-muted)">{search.trim() ? `No one matches "${search.trim()}".` : 'Nothing here in this period.'}</p>
       ) : (
         <>
-          <div className="mt-3 overflow-x-auto rounded-xl border border-gray-200">
+          {/* Phones: one card per row (nothing to slide sideways), with a sort picker instead of the column headings */}
+          <div className="mt-3 md:hidden">
+            <div className="flex items-center gap-2">
+              <label className="sr-only" htmlFor="card-sort">Sort by</label>
+              <select
+                id="card-sort"
+                value={current?.key ?? ''}
+                onChange={(event) => {
+                  const column = details.columns.find((item) => item.key === event.target.value);
+                  if (column) {
+                    setSort({ key: column.key, direction: firstDirection(column) });
+                    setOpenRow(null);
+                    setShown(PAGE);
+                  }
+                }}
+                className="h-10 min-w-0 flex-1 rounded-full border border-gray-300 bg-white px-3 text-sm"
+              >
+                {details.columns.map((column) => (
+                  <option key={column.key} value={column.key}>Sort by {column.label}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => {
+                  setSort({ key: sortKey, direction: sortDirection === 'asc' ? 'desc' : 'asc' });
+                  setOpenRow(null);
+                  setShown(PAGE);
+                }}
+                aria-label={sortDirection === 'asc' ? 'Ascending, tap for descending' : 'Descending, tap for ascending'}
+                className="h-10 w-10 shrink-0 cursor-pointer rounded-full border border-gray-300 bg-white text-sm font-semibold text-(--c-text-2)"
+              >
+                {sortDirection === 'asc' ? '▲' : '▼'}
+              </button>
+            </div>
+            <ul className="mt-3 space-y-2.5">
+              {rows.slice(0, shown).map((row, index) => {
+                const expandable = Boolean(row.pages);
+                const isOpen = expandable && openRow === index;
+                const [titleColumn, ...rest] = details.columns;
+                return (
+                  <li key={index} className={`rounded-xl border border-gray-200 p-3 ${isOpen ? 'bg-(--c-accent-soft)' : 'bg-white'}`}>
+                    <div
+                      className={expandable ? 'cursor-pointer' : undefined}
+                      onClick={expandable ? () => setOpenRow(isOpen ? null : index) : undefined}
+                      role={expandable ? 'button' : undefined}
+                    >
+                      <p className="flex items-start gap-2 text-sm font-semibold">
+                        <span className="shrink-0 text-xs font-medium tabular-nums text-(--c-muted)">{expandable ? (isOpen ? '▾' : '▸') : ''} {index + 1}.</span>
+                        <span className="min-w-0 break-words">{cell(titleColumn, row)}</span>
+                      </p>
+                      <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                        {rest.map((column) => (
+                          <div key={column.key} className="min-w-0">
+                            <dt className="text-[0.65rem] font-semibold uppercase tracking-wide text-(--c-muted)">{column.label}</dt>
+                            <dd className={`break-words ${column.type === 'number' ? 'font-semibold tabular-nums' : ''}`}>{cell(column, row)}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </div>
+                    {isOpen && (
+                      <div className="mt-3 border-t border-gray-200 pt-3">
+                        <p className="mb-3 text-sm font-semibold">
+                          {row.name ?? 'This person'} <span className="font-normal text-(--c-muted)">· {number(row.count)} times across {number(row.pages.length)} pages</span>
+                        </p>
+                        <PageDonuts pages={row.pages} />
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          <div className="mt-3 hidden overflow-x-auto rounded-xl border border-gray-200 md:block">
             <table className="w-full min-w-[40rem] text-left text-sm">
               <thead className="bg-(--c-band) text-xs uppercase tracking-wide text-(--c-muted)">
                 <tr>
