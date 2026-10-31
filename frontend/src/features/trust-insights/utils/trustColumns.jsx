@@ -33,13 +33,6 @@ function activityLink(trustId, filter, suffix = '') {
  */
 export const TRUST_COLUMNS = [
   {
-    id: 'createdAt',
-    label: 'Created At',
-    sortKey: 'createdAt',
-    tdClass: 'whitespace-nowrap text-(--c-text-2)',
-    cell: (t) => formatDateTime(t.createdAt),
-  },
-  {
     id: 'trust',
     label: 'Trust',
     cell: (t, { filter }) => (
@@ -52,6 +45,50 @@ export const TRUST_COLUMNS = [
         </Link>
       </div>
     ),
+  },
+  {
+    id: 'appType',
+    label: 'App Type',
+    sortKey: 'appType',
+    cell: (t) =>
+      t.appType ? (
+        <span className="whitespace-nowrap rounded-full bg-(--c-accent-soft)/70 px-2.5 py-1 text-xs font-medium text-(--c-link)">
+          {t.appType}
+        </span>
+      ) : (
+        EMPTY
+      ),
+  },
+  {
+    id: 'details',
+    label: 'Trust Details',
+    tdClass: 'whitespace-nowrap',
+    cell: (t, { onDetails }) => (
+      <span className="inline-flex items-center gap-1.5">
+        {[
+          ['bank', 'Bank'],
+          ['company', 'Company'],
+        ].map(([kind, label], i) => (
+          <span key={kind} className="inline-flex items-center gap-1.5">
+            {i > 0 && <span className="text-(--c-faint)">/</span>}
+            <button
+              type="button"
+              onClick={() => onDetails(kind, t)}
+              className="cursor-pointer font-medium text-(--c-link) hover:underline"
+            >
+              {label}
+            </button>
+          </span>
+        ))}
+      </span>
+    ),
+  },
+  {
+    id: 'createdAt',
+    label: 'Created At',
+    sortKey: 'createdAt',
+    tdClass: 'whitespace-nowrap text-(--c-text-2)',
+    cell: (t) => formatDateTime(t.createdAt),
   },
   {
     id: 'link',
@@ -72,20 +109,6 @@ export const TRUST_COLUMNS = [
         EMPTY
       );
     },
-  },
-  {
-    id: 'appType',
-    label: 'App Type',
-    sortKey: 'appType',
-    extra: true,
-    cell: (t) =>
-      t.appType ? (
-        <span className="whitespace-nowrap rounded-full bg-(--c-accent-soft)/70 px-2.5 py-1 text-xs font-medium text-(--c-link)">
-          {t.appType}
-        </span>
-      ) : (
-        EMPTY
-      ),
   },
   {
     id: 'superUser',

@@ -1,4 +1,4 @@
-import { apiGet } from '../../../lib/apiClient';
+import { apiDelete, apiGet, apiPut } from '../../../lib/apiClient';
 
 /**
  * GET /trust-insights
@@ -53,3 +53,12 @@ export const fetchTrustMemberActions = (trustId, { range, from, to, user, target
  * }
  */
 export const fetchTrustMemberLogins = (trustId) => apiGet(`/trust-insights/${trustId}/members`);
+
+/**
+ * Bank details (trust_bank_details, one per trust) and company details (columns on the Trust row); kind = 'bank' | 'company'.
+ * GET returns the record (bank: null when none yet); PUT saves it (bank: creates or updates); DELETE removes
+ * the bank details, or empties the company fields.
+ */
+export const fetchTrustDetails = (kind, trustId) => apiGet(`/trust-insights/${trustId}/${kind}-details`);
+export const saveTrustDetails = (kind, trustId, values) => apiPut(`/trust-insights/${trustId}/${kind}-details`, values);
+export const deleteTrustDetails = (kind, trustId) => apiDelete(`/trust-insights/${trustId}/${kind}-details`);

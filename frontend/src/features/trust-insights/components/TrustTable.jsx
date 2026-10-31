@@ -10,7 +10,7 @@ import { TRUST_COLUMNS } from '../utils/trustColumns';
  * rows scroll inside the box, so before that the mouse wheel moves the page and brings the table into place.
  * `showExtra` shows the less important columns too (see TRUST_COLUMNS).
  */
-function TrustTable({ trusts, loading, filter, sort, onSort, searching = false, pinned = false, scrollResetKey, showExtra = false }) {
+function TrustTable({ trusts, loading, filter, sort, onSort, searching = false, pinned = false, scrollResetKey, showExtra = false, onDetails }) {
   const scrollRef = useDragScroll();
   const columns = TRUST_COLUMNS.filter((c) => showExtra || !c.extra);
 
@@ -24,11 +24,11 @@ function TrustTable({ trusts, loading, filter, sort, onSort, searching = false, 
     // to pan it; wheel, trackpad and touch work as usual.
     <div
       ref={scrollRef}
-      className={`scrollbar-none max-h-[70vh] cursor-grab overflow-auto rounded-xl border border-gray-200 lg:max-h-none lg:min-h-0 lg:flex-1 ${
+      className={`scrollbar-none max-lg:hidden max-h-[70vh] cursor-grab overflow-auto rounded-xl border border-gray-200 lg:max-h-none lg:min-h-0 lg:flex-1 ${
         pinned ? 'lg:overflow-y-auto' : 'lg:overflow-y-hidden'
       }`}
     >
-      <table className={`w-full text-sm ${showExtra ? 'min-w-[1700px]' : 'min-w-[1000px]'}`}>
+      <table className={`w-full text-sm ${showExtra ? 'min-w-[1850px]' : 'min-w-[1150px]'}`}>
         <thead>
           <tr>
             {columns.map((c) =>
@@ -62,7 +62,7 @@ function TrustTable({ trusts, loading, filter, sort, onSort, searching = false, 
             <tr key={trust.id}>
               {columns.map((c) => (
                 <td key={c.id} className={`px-4 py-3 ${c.tdClass ?? ''}`}>
-                  {c.cell(trust, { filter })}
+                  {c.cell(trust, { filter, onDetails })}
                 </td>
               ))}
             </tr>

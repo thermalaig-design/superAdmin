@@ -62,6 +62,11 @@ function TiltCard({ accent, to, onSelect, active, label, children }) {
         <span className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-(--accent) opacity-15 blur-xl transition-all duration-300 group-hover:scale-150 group-hover:opacity-30" aria-hidden="true" />
         <span className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-(--accent)" aria-hidden="true" />
         <span ref={glare} className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200" aria-hidden="true" />
+        {active && (
+          <span className="animate-pop pointer-events-none absolute right-2 top-2.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-(--accent) text-[0.7rem] font-bold text-white shadow-sm" aria-hidden="true">
+            ✓
+          </span>
+        )}
         <div className="relative" style={{ transform: 'translateZ(28px)' }}>
           {children}
         </div>

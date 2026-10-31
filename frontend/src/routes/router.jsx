@@ -19,6 +19,10 @@ const TrustInsightsPage = lazy(() =>
   import('../features/trust-insights/pages/TrustInsightsPage')
 );
 
+const MemberImportPage = lazy(() =>
+  import('../features/member-import/pages/MemberImportPage')
+);
+
 const TrustActivityPage = lazy(() =>
   import('../features/trust-insights/pages/TrustActivityPage')
 );
@@ -139,6 +143,10 @@ export const router = createBrowserRouter([
           {
             path: '/organization-insights',
             element: lazyPage(TrustInsightsPage),
+          },
+          {
+            path: '/organization-insights/import-members',
+            element: lazyPage(MemberImportPage),
           },
           {
             path: '/trust-insights/:trustId',

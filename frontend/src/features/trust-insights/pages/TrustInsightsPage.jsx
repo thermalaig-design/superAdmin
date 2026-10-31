@@ -1,4 +1,5 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import AreaChart from '../../../components/AreaChart';
 import OverviewPanel from '../../../components/OverviewPanel';
@@ -9,6 +10,8 @@ import { useSessionState } from '../../../hooks/useSessionState';
 import { useStoredToggle } from '../../../hooks/useStoredToggle';
 import OverviewStats from '../components/overview/OverviewStats';
 import PeriodFilter from '../../../components/PeriodFilter';
+import TrustDetailsModal from '../components/details/TrustDetailsModal';
+import TrustCards from '../components/TrustCards';
 import TrustTable from '../components/TrustTable';
 import { useTrustInsights } from '../hooks/useTrustInsights';
 import { searchTrusts } from '../utils/searchTrusts';
@@ -20,6 +23,16 @@ import { buildCreationSeries } from '../utils/trustSeries';
 const panel = 'rounded-2xl border border-gray-200 bg-white p-5 shadow-[0_1px_3px_rgba(20,33,61,0.06)]';
 const DEFAULT_SORT = { key: 'createdAt', dir: 'desc' }; // newest first, as the server sends them
 const DEFAULT_PAGE_SIZE = 25;
+// What the phone's sort box offers (the table sorts by clicking its column headers).
+const SORT_CHOICES = [
+  ['createdAt:desc', 'Newest first'],
+  ['createdAt:asc', 'Oldest first'],
+  ['activityNumber:desc', 'Most user activity'],
+  ['appActions:desc', 'Most app actions'],
+  ['lastActivityAt:desc', 'Latest activity'],
+  ['uniqueMemberLogins:desc', 'Most member logins'],
+  ['lastMemberLoginAt:desc', 'Latest member login'],
+];
 const PIN_OFFSET = 88; // px = 4rem header + 1.5rem gap; matches the panel's lg:top-[5.5rem]
 
 function TrustInsightsPage() {
@@ -56,6 +69,11 @@ function TrustInsightsPage() {
     setSort((current) => nextSort(current, key));
     setPage(1);
   };
+  const chooseSort = (value) => {
+    const [key, dir] = value.split(':');
+    setSort({ key, dir });
+    setPage(1);
+  };
   const changePageSize = (size) => {
     setPageSize(size);
     setPage(1);
@@ -76,6 +94,10 @@ function TrustInsightsPage() {
 
   const initialLoad = loading && !data;
 
+  // The bank / company details popup: { kind: 'bank' | 'company', trust } or null.
+  const [details, setDetails] = useState(null);
+  const openDetails = (kind, trust) => setDetails({ kind, trust });
+
   return (
     <div className="mx-auto max-w-7xl">
       {/* <h1 className="text-3xl font-bold tracking-tight">Trust Insights</h1> */}
@@ -93,7 +115,16 @@ function TrustInsightsPage() {
           <h2 className="text-lg font-semibold">Trust Creation Overview</h2>
           {/* <p className="mt-1 text-sm text-(--c-text-3)">All trusts on the platform · based on creation date</p> */}
         </div>
-        <PeriodFilter filter={filter} onChange={changePeriod} />
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            to="/organization-insights/import-members"
+            state={{ backLabel: 'Organization Insights' }}
+            className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-(--c-grad-from) via-(--c-grad-via) to-(--c-grad-to) px-4 text-sm font-semibold text-white shadow-[0_2px_8px_rgba(15,120,110,0.35)] transition hover:brightness-110"
+          >
+            ⬆ Import members
+          </Link>
+          <PeriodFilter filter={filter} onChange={changePeriod} />
+        </div>
       </div>
 
       <OverviewPanel
@@ -126,8 +157,8 @@ function TrustInsightsPage() {
               </span>
             )}
           </div>
-          <div className="flex w-full items-center gap-2 sm:w-auto">
-            <div className="min-w-0 flex-1 sm:w-80 sm:flex-none">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+            <div className="w-full min-w-0 sm:w-80 sm:flex-none">
               <SearchInput
                 value={search}
                 onChange={changeSearch}
@@ -143,12 +174,27 @@ function TrustInsightsPage() {
             >
               Reset
             </button>
+            <select
+              value={`${sort.key}:${sort.dir}`}
+              onChange={(event) => chooseSort(event.target.value)}
+              aria-label="Sort trusts"
+              className="h-10 min-w-0 flex-1 cursor-pointer rounded-xl border border-gray-300 bg-white px-3 text-sm text-(--c-text-2) outline-none focus:border-(--c-accent) lg:hidden"
+            >
+              {SORT_CHOICES.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+              {!SORT_CHOICES.some(([value]) => value === `${sort.key}:${sort.dir}`) && (
+                <option value={`${sort.key}:${sort.dir}`}>Sorted by {sort.key}</option>
+              )}
+            </select>
             <button
               type="button"
               onClick={toggleExtra}
               aria-pressed={showExtra}
               title={showExtra ? 'Show only the main columns' : 'Show the less important columns too'}
-              className="h-10 shrink-0 cursor-pointer whitespace-nowrap rounded-xl border border-gray-300 px-4 text-sm font-medium text-(--c-text-2) hover:bg-gray-50"
+              className="h-10 shrink-0 cursor-pointer whitespace-nowrap rounded-xl border border-gray-300 px-4 text-sm font-medium text-(--c-text-2) hover:bg-gray-50 max-lg:hidden"
             >
               {showExtra ? 'Hide extra columns' : `Show more columns (${EXTRA_COLUMN_COUNT})`}
             </button>
@@ -156,7 +202,7 @@ function TrustInsightsPage() {
         </div>
 
         {hiddenSort && (
-          <p className="-mt-2 mb-3 shrink-0 text-xs text-(--c-muted)">
+          <p className="-mt-2 mb-3 shrink-0 text-xs text-(--c-muted) max-lg:hidden">
             Sorted by <span className="font-medium text-(--c-text-2)">{hiddenSort}</span>, which is hidden. Show more columns to see it.
           </p>
         )}
@@ -170,8 +216,11 @@ function TrustInsightsPage() {
           searching={searching}
           showExtra={showExtra}
           pinned={pinned}
+          onDetails={openDetails}
           scrollResetKey={`${currentPage}|${pageSize}|${sort.key}|${sort.dir}|${search}|${filter.range}`}
         />
+
+        <TrustCards trusts={pageRows} loading={loading} filter={filter} onDetails={openDetails} searching={searching} />
 
         <Pagination
           page={currentPage}
@@ -182,6 +231,8 @@ function TrustInsightsPage() {
           onPageSizeChange={changePageSize}
         />
       </section>
+
+      {details && <TrustDetailsModal kind={details.kind} trust={details.trust} onClose={() => setDetails(null)} />}
     </div>
   );
 }

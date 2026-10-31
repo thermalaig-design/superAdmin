@@ -169,6 +169,19 @@ function DashboardPage() {
     panelActivity: 'User Panel Activity',
     otherActivity: 'Other App Activity',
   };
+  // The colour of each card, so the line above the source pills can show which card is being shown.
+  const CARD_COLORS = {
+    leads: 'var(--c-c3)',
+    members: 'var(--c-c2)',
+    notLogin: '#dc2626',
+    loggedIn: '#16a34a',
+    apps: 'var(--c-good)',
+    activity: 'var(--c-c4)',
+    otherLogin: 'var(--c-c3)',
+    setuActivity: 'var(--c-c2)',
+    panelActivity: 'var(--c-good)',
+    otherActivity: 'var(--c-bad-text)',
+  };
   const stats = [
     {
       accent: 'var(--c-c3)',
@@ -191,6 +204,7 @@ function DashboardPage() {
     {
       accent: 'var(--c-bad-text)',
       label: 'SETU AI',
+      active: pickedCard === 'notLogin' || pickedCard === 'loggedIn',
       parts: [
         { value: number(sc ? sc.otpNotLogin : t?.otpNotLogin), caption: 'Not login', color: '#dc2626', ...select('notLogin') },
         { value: number(sc ? sc.otpLoggedIn : t?.otpLoggedIn), caption: 'Logged in', color: '#16a34a', ...select('loggedIn') },
@@ -291,6 +305,8 @@ function DashboardPage() {
           value={sourceKey}
           onChange={setSourceKey}
           counts={chipCounts}
+          viewing={{ title: CARD_TITLES[pickedCard ?? 'leads'], color: CARD_COLORS[pickedCard ?? 'leads'], picked: Boolean(pickedCard) }}
+          onClear={() => setPickedCard(null)}
         />
         {pickedCard && (
           <CardDetails

@@ -19,12 +19,35 @@ function Tile({ sourceKey, letter, color, active }) {
 
 /**
  * One row of pills: All, then each source. `value` is a source key or null for all. A selected pill fills with its own
- * source colour; `counts` ({ [key]: leads, all: total }) shows how many leads each source has in the period.
+ * source colour; `counts` ({ [key]: number, all: total }) shows that number per source in the period.
+ * `viewing` = { title, color, picked } says which number the counts are (a card the user picked, or the leads); `onClear` un-picks the card.
  */
-function SourceFilterBar({ value, onChange, counts }) {
+function SourceFilterBar({ value, onChange, counts, viewing, onClear }) {
   const options = [{ key: null, short: 'All', letter: 'All', color: ALL_COLOR }, ...SOURCES];
 
   return (
+    <>
+      {viewing && (
+        <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1.5" aria-live="polite">
+          <span
+            key={viewing.title}
+            className="animate-pop inline-flex max-w-full items-center gap-2 rounded-full border bg-white py-1 pl-2.5 pr-3 text-sm shadow-sm"
+            style={{ borderColor: `color-mix(in srgb, ${viewing.color} 45%, transparent)` }}
+          >
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: viewing.color, boxShadow: `0 0 0 3px color-mix(in srgb, ${viewing.color} 25%, transparent)` }} aria-hidden="true" />
+            <span className="text-(--c-muted)">Showing</span>
+            <b className="truncate font-semibold text-(--c-text)">{viewing.title}</b>
+            <span className="hidden text-(--c-muted) sm:inline">by source</span>
+          </span>
+          {viewing.picked ? (
+            <button type="button" onClick={onClear} className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-full border border-gray-300 px-2.5 text-xs font-medium text-(--c-text-2) transition hover:bg-(--c-bad-bg) hover:text-(--c-bad-text)">
+              ✕ Clear
+            </button>
+          ) : (
+            <span className="text-xs text-(--c-muted)">Tap a card above to see its number by source</span>
+          )}
+        </div>
+      )}
     <div className="grid w-full max-w-full grid-cols-2 gap-1.5 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-[0_1px_3px_rgba(20,33,61,0.06)] sm:flex sm:gap-1 sm:rounded-full" role="group" aria-label="Filter by lead source">
       {options.map((option) => {
         const active = value === option.key;
@@ -58,6 +81,7 @@ function SourceFilterBar({ value, onChange, counts }) {
         );
       })}
     </div>
+    </>
   );
 }
 
