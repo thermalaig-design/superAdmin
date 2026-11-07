@@ -48,7 +48,7 @@ function TiltCard({ accent, to, onSelect, active, label, children }) {
     : {};
 
   return (
-    <div className="[perspective:900px]">
+    <div className="h-full [perspective:900px]">
       <Surface
         {...link}
         {...button}

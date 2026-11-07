@@ -5,6 +5,7 @@ import DashboardLayout from '../layouts/DashboardLayout';
 import ProtectedRoute from './ProtectedRoute';
 import PublicRoute from './PublicRoute';
 import NotFoundPage from '../features/errors/pages/NotFoundPage';
+import DiwaliRoot from '../features/diwali/DiwaliRoot';
 import RouteErrorPage from '../features/errors/pages/RouteErrorPage';
 
 const LoginPage = lazy(() =>
@@ -103,6 +104,7 @@ const lazyPage =(Component) => (
 
 export const router = createBrowserRouter([
   {
+    element: <DiwaliRoot />,
     errorElement: <RouteErrorPage />,
     children: [
   {

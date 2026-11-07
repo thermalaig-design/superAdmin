@@ -186,7 +186,7 @@ function DashboardPage() {
     {
       accent: 'var(--c-c3)',
       label: 'New Leads',
-      parts: [{ value: number(sc ? sc.leadsInPeriod : t?.leadsInPeriod) }],
+      parts: [{ value: number(sc ? sc.leadsInPeriod : data?.sources.reduce((sum, s) => sum + s.leads, 0) ?? t?.leadsInPeriod) }], // all sources in total (as the "All" chip); the split below shows Meta and Google
       split: !sc && t?.leadsBySource && [
         { label: 'Meta', value: t.leadsBySource.meta, color: COLORS.facebook },
         { label: 'Google', value: t.leadsBySource.google, color: COLORS.google },
@@ -204,7 +204,8 @@ function DashboardPage() {
     {
       accent: 'var(--c-bad-text)',
       label: 'SETU AI',
-      active: pickedCard === 'notLogin' || pickedCard === 'loggedIn',
+      active: pickedCard === 'notLogin' || pickedCard === 'loggedIn', // clicking the card opens Logged in (or closes it); clicking either number switches to that one
+      onSelect: () => setPickedCard((current) => (current === 'notLogin' || current === 'loggedIn' ? null : 'loggedIn')),
       parts: [
         { value: number(sc ? sc.otpNotLogin : t?.otpNotLogin), caption: 'Not login', color: '#dc2626', ...select('notLogin') },
         { value: number(sc ? sc.otpLoggedIn : t?.otpLoggedIn), caption: 'Logged in', color: '#16a34a', ...select('loggedIn') },

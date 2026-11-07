@@ -48,7 +48,7 @@ function SourceFilterBar({ value, onChange, counts, viewing, onClear }) {
           )}
         </div>
       )}
-    <div className="grid w-full max-w-full grid-cols-2 gap-1.5 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-[0_1px_3px_rgba(20,33,61,0.06)] sm:flex sm:gap-1 sm:rounded-full" role="group" aria-label="Filter by lead source">
+    <div className="grid w-full max-w-full grid-cols-2 gap-1.5 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-[0_1px_3px_rgba(20,33,61,0.06)] sm:flex sm:flex-wrap sm:gap-1 sm:rounded-3xl" role="group" aria-label="Filter by lead source">
       {options.map((option) => {
         const active = value === option.key;
         const count = counts?.[option.key ?? 'all'];
@@ -66,12 +66,12 @@ function SourceFilterBar({ value, onChange, counts, viewing, onClear }) {
                   }
                 : undefined
             }
-            className={`flex min-h-10 min-w-0 cursor-pointer items-center gap-1.5 rounded-full py-0.5 pl-1 pr-2 text-xs sm:min-h-9 sm:flex-1 sm:justify-center sm:gap-1 sm:pl-0.5 sm:pr-1.5 font-semibold transition-all duration-200 ${
+            className={`flex min-h-10 min-w-0 cursor-pointer items-center gap-1.5 rounded-full py-0.5 pl-1 pr-2 text-xs sm:min-h-9 sm:flex-auto sm:justify-center sm:gap-1 sm:pl-0.5 sm:pr-1.5 font-semibold transition-all duration-200 ${
               active ? 'text-white' : 'text-(--c-text-2) hover:bg-(--c-accent-soft)'
             }`}
           >
             <Tile sourceKey={option.key} letter={option.letter} color={option.color} active={active} />
-            <span className="min-w-0 truncate sm:flex-initial">{option.short}</span>
+            <span className="min-w-0 truncate sm:flex-initial sm:overflow-visible sm:whitespace-nowrap">{option.short}</span>
             {count != null && (
               <span className={`ml-auto shrink-0 rounded-full px-1.5 sm:ml-0 py-0.5 text-[0.65rem] font-bold tabular-nums ${active ? 'bg-white/25 text-white' : 'bg-(--c-band) text-(--c-muted)'}`}>
                 {number(count)}

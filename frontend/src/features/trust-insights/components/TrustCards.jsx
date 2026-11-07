@@ -3,7 +3,8 @@ import { TRUST_COLUMNS } from '../utils/trustColumns';
 const cellOf = (id) => TRUST_COLUMNS.find((column) => column.id === id).cell;
 const trustCell = cellOf('trust');
 const appTypeCell = cellOf('appType');
-const detailsCell = cellOf('details');
+const subscriptionCell = cellOf('subscription');
+const detailsCell =cellOf('details');
 const linkCell = cellOf('link');
 const createdCell = cellOf('createdAt');
 const activityCell = cellOf('activity');
@@ -56,6 +57,7 @@ function TrustCards({ trusts, loading, filter, onDetails, searching = false }) {
 
           <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
             {appTypeCell(trust, context)}
+            {subscriptionCell(trust, context)}
             {trust.website && <span className="min-w-0 text-sm">{linkCell(trust, context)}</span>}
           </div>
 

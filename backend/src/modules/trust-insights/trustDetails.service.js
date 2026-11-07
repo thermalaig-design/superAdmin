@@ -84,6 +84,28 @@ export async function saveCompanyDetails(trustId, body) {
     return getCompanyDetails(trustId);
 }
 
+// ---- Subscription: the subscription_type column on the Trust row (null = free) ----
+
+const SUBSCRIPTIONS = ['premium', 'free'];
+
+const toSubscription = (row) => ({ id: row.id, subscription: row.subscription_type === 'premium' ? 'premium' : 'free' });
+
+export async function getSubscription(trustId) {
+    const { data, error } = await supabase.from('Trust').select('id, subscription_type').eq('id', trustId).maybeSingle();
+    if (error) throw error;
+    if (!data) throw Object.assign(new Error('Trust not found'), { status: 404 });
+    return toSubscription(data);
+}
+
+/** Sets the trust to premium or free. "free" is stored as null, as for trusts that never had a plan. */
+export async function saveSubscription(trustId, subscription) {
+    const value = typeof subscription === 'string' ? subscription.trim().toLowerCase() : '';
+    if (!SUBSCRIPTIONS.includes(value)) throw Object.assign(new Error('Subscription must be premium or free'), { status: 400 });
+    await getSubscription(trustId);
+    check(await supabase.from('Trust').update({ subscription_type: value === 'premium' ? 'premium' : null }).eq('id', trustId));
+    return getSubscription(trustId);
+}
+
 /** The trust itself stays: "delete" empties its company fields (the name and app type are kept). */
 export async function clearCompanyDetails(trustId) {
     const cleared = Object.fromEntries(COMPANY_FIELDS.filter((f) => f !== 'keyword').map((f) => [f, null]));

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 
 import Avatar from '../../../components/Avatar';
 import { formatDateTime } from '../../../utils/formatDate';
+import SubscriptionCell from '../components/SubscriptionCell';
 import { formatTimestamp } from './chart';
 
 const EMPTY = <span className="text-(--c-faint)">—</span>;
@@ -58,6 +59,13 @@ export const TRUST_COLUMNS = [
       ) : (
         EMPTY
       ),
+  },
+  {
+    id: 'subscription',
+    label: 'Subscription',
+    sortKey: 'subscription',
+    tdClass: 'whitespace-nowrap',
+    cell: (t) => <SubscriptionCell trust={t} />,
   },
   {
     id: 'details',

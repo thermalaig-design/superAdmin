@@ -17,7 +17,18 @@ function SourceIcon({ sourceKey, letter, className = 'h-5 w-5' }) {
       </svg>
     );
   }
-  if (sourceKey === 'google' || sourceKey === 'googleclick') {
+  if (sourceKey === 'googleclick') {
+    // the same "G", smaller, with a mouse pointer: a click
+    return (
+      <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <g transform="translate(-1.6 -1.6) scale(0.85)">
+          <path d="M18.8 7.2A8 8 0 1 0 20 12h-7.5" />
+        </g>
+        <path d="M13 13l8 3-3.4 1.4L16 21z" fill="currentColor" stroke="none" />
+      </svg>
+    );
+  }
+  if (sourceKey === 'google') {
     // a "G": an open ring with a bar
     return (
       <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

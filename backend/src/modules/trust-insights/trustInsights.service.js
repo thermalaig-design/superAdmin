@@ -13,6 +13,7 @@ const toTrust = (row, logins) => ({
     name: row.name,
     logoUrl: row.icon_url,
     appType: row.keyword?.trim() || null,
+    subscription: row.subscription_type?.trim().toLowerCase() === 'premium' ? 'premium' : 'free',
     website: [row.shareApp_links].flat()[0]?.web_app_url?.trim() || null,
     superUserName: row.superuser?.name ?? null,
     superUserNumber: row.superuser?.mobile ?? null,
@@ -32,7 +33,7 @@ export async function getTrustInsights({ start, end, firstDay, lastDay, todaySta
             .from('Trust')
             // All activity values are all-time: activity / last activity = rows of registered users (user_reg_id), member_actions = rows of members (members_id); only the trust list itself follows the selected period.
             .select(
-                'id, name, icon_url, keyword, created_at, shareApp_links(web_app_url), superuser:superuser_id(name, mobile), user_activity:page_activity(count), member_actions:page_activity(count), last_activity:page_activity(created_at)'
+                'id, name, icon_url, keyword, subscription_type, created_at, shareApp_links(web_app_url), superuser:superuser_id(name, mobile), user_activity:page_activity(count), member_actions:page_activity(count), last_activity:page_activity(created_at)'
             )
             .not('user_activity.user_reg_id', 'is', null)
             .not('last_activity.user_reg_id', 'is', null)

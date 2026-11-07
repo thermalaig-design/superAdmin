@@ -5,8 +5,10 @@ import { fetchTrustActivity, fetchTrustMemberActions } from './trustActivity.con
 import {
     fetchBankDetails,
     fetchCompanyDetails,
+    fetchSubscription,
     putBankDetails,
     putCompanyDetails,
+    putSubscription,
     removeBankDetails,
     removeCompanyDetails,
 } from './trustDetails.controller.js';
@@ -27,5 +29,8 @@ router.delete('/:trustId/bank-details', requireAuth, removeBankDetails);
 router.get('/:trustId/company-details', requireAuth, fetchCompanyDetails);
 router.put('/:trustId/company-details', requireAuth, putCompanyDetails);
 router.delete('/:trustId/company-details', requireAuth, removeCompanyDetails);
+
+router.get('/:trustId/subscription', requireAuth, fetchSubscription);
+router.put('/:trustId/subscription', requireAuth, putSubscription);
 
 export default router;
