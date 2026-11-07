@@ -2,6 +2,7 @@
 export const SORT_COLUMNS = {
   createdAt: { type: 'date', firstDirection: 'desc' },
   appType: { type: 'text', firstDirection: 'asc' },
+  subscription: { type: 'text', firstDirection: 'asc' },
   activityNumber: { type: 'number', firstDirection: 'desc' },
   appActions: { type: 'number', firstDirection: 'desc' },
   lastActivityAt: { type: 'date', firstDirection: 'desc' },

@@ -5,6 +5,7 @@ import { useTheme } from '../hooks/useTheme';
 import TargetsNav from '../features/targets/components/TargetsNav';
 import BackLink from '../components/BackLink';
 import ReportsNav from './ReportsNav';
+import { DiwaliControls, DiwaliLights } from '../features/diwali/decor';
 
 
 const roundButton =
@@ -58,6 +59,7 @@ function TopBar({ onOpenMenu }) {
   const onLeadList = pathname === '/campaign-leads' || pathname === '/otp-not-login' || pathname === '/new-apps' || pathname.startsWith('/registrations'); // these pages put their Back link, search and period here (see CampaignLeadsPage, RegistrationsPage)
   return (
     <header className="sticky border-2 top-0 z-20 flex h-16 items-center justify-between  border-gray-100 bg-white px-3 sm:px-6 lg:px-10 mx-1">
+      <DiwaliLights />
       <div className={`flex min-w-0 flex-1 items-center gap-2 pr-2 sm:gap-3 sm:pr-8 ${onDashboard ? '' : 'overflow-hidden'} ${onTargets ? "xl:justify-center" : ""}`}>
         {/* Phones only: opens the drawer. On large screens the sidebar has its own collapse button. */}
         <button
@@ -104,6 +106,7 @@ function TopBar({ onOpenMenu }) {
             </div>
           </>
         )}
+        <DiwaliControls />
         <button
           type="button"
           onClick={toggleTheme}

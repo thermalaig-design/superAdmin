@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../../features/auth/services/authService';
 import { useTargetsView } from '../../features/targets/hooks/useTargetsView';
 import Logo from '../Logo';
+import { Diya, Toran } from '../../features/diwali/decor';
+import { useDiwali } from '../../features/diwali/useDiwali';
 import { DashboardIcon, InsightsIcon, LogoutIcon, MarketingIcon, MembersIcon, PageDirectoryIcon, SidebarToggleIcon, TargetIcon } from './icons';
 
 const NAV_ITEMS = [
@@ -37,6 +39,7 @@ function Sidebar({ open, onClose, collapsed = false, onToggle }) {
   const navigate = useNavigate();
   const { pathname, state } = useLocation();
   const [, setTargetsView] = useTargetsView();
+  const [festive] = useDiwali();
 
   const handleLogout = () => {
     logout();
@@ -60,7 +63,8 @@ function Sidebar({ open, onClose, collapsed = false, onToggle }) {
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className={`flex items-center gap-3 px-2 ${collapsed ? 'lg:flex-col lg:px-0' : ''}`}>
+        <Toran className="absolute inset-x-0 top-0 -mt-px" />
+        <div className={`flex items-center gap-3 px-2 ${festive ? 'mt-3' : ''} ${collapsed ? 'lg:flex-col lg:px-0' : ''}`}>
           <Logo className={collapsed ? 'h-14 w-14 lg:h-11 lg:w-11' : 'h-14 w-14'} />
           <div className={collapsed ? 'lg:hidden' : ''}>
             <p className="text-sm font-semibold leading-tight">SETU AI</p>
@@ -104,6 +108,14 @@ function Sidebar({ open, onClose, collapsed = false, onToggle }) {
             );
           })}
         </nav>
+
+        {festive && (
+          <div className={`mt-3 flex shrink-0 items-center justify-center gap-2 ${collapsed ? 'lg:flex-col' : ''}`} aria-hidden="true">
+            <Diya className="h-8 w-8" />
+            <span className={`dw-chip rounded-full px-3 py-1 text-[0.7rem] font-semibold ${collapsed ? 'lg:hidden' : ''}`}>Shubh Deepawali</span>
+            <Diya className={`h-8 w-8 ${collapsed ? 'lg:hidden' : ''}`} />
+          </div>
+        )}
 
         <button
           type="button"

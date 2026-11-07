@@ -9,7 +9,7 @@ import { apiDelete, apiGet, apiPut } from '../../../lib/apiClient';
  *   totalTrusts, createdToday,
  *   period: { count, from, to },
  *   lastTrust: { name, createdAt } | null,
- *   trusts: [{ id, name, logoUrl, appType, website, superUserName, superUserNumber, activityNumber, appActions, lastActivityAt,
+ *   trusts: [{ id, name, logoUrl, appType, subscription ('premium' | 'free'), website, superUserName, superUserNumber, activityNumber, appActions, lastActivityAt,
  *             uniqueMemberLogins, lastMemberLoginAt, createdAt }]
  * }
  */
@@ -62,3 +62,6 @@ export const fetchTrustMemberLogins = (trustId) => apiGet(`/trust-insights/${tru
 export const fetchTrustDetails = (kind, trustId) => apiGet(`/trust-insights/${trustId}/${kind}-details`);
 export const saveTrustDetails = (kind, trustId, values) => apiPut(`/trust-insights/${trustId}/${kind}-details`, values);
 export const deleteTrustDetails = (kind, trustId) => apiDelete(`/trust-insights/${trustId}/${kind}-details`);
+
+/** PUT /trust-insights/:trustId/subscription with 'premium' | 'free' (free clears the plan). Returns { id, subscription }. */
+export const saveTrustSubscription = (trustId, subscription) => apiPut(`/trust-insights/${trustId}/subscription`, { subscription });

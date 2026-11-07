@@ -8,12 +8,14 @@ function Figure({ value, caption, to, onSelect, active, big, color }) {
   // each clickable number can have its own colour (the number and its underline)
   const clickable = to || onSelect;
   const tint = clickable && color ? { color, textDecorationColor: color } : undefined;
-  const number = <span style={tint} className={`block font-semibold leading-none tracking-tight tabular-nums ${clickable && !color ? 'text-blue-600' : clickable ? '' : 'text-(--c-text)'} ${big ? 'text-[1.75rem]' : 'text-[1.5rem]'}`}>{value}</span>;
+  const underline = onSelect ? `underline decoration-blue-400 underline-offset-[6px] ${active ? 'decoration-solid decoration-2' : 'decoration-dotted decoration-2'}` : '';
+  const number = <span style={tint} className={`block ${underline} font-semibold leading-none tracking-tight tabular-nums ${clickable && !color ? 'text-blue-600' : clickable ? '' : 'text-(--c-text)'} ${big ? 'text-[1.75rem]' : 'text-[1.5rem]'}`}>{value}</span>;
   return (
     <div className="min-w-0">
       {onSelect ? (
-        <button type="button" onClick={onSelect} aria-pressed={Boolean(active)} style={tint} title={caption ? `See: ${caption}` : undefined} className={`inline-block cursor-pointer rounded-md underline decoration-blue-400 underline-offset-[6px] transition hover:brightness-90 focus-visible:outline-2 focus-visible:outline-(--accent) ${active ? 'decoration-solid decoration-2' : 'decoration-dotted decoration-2'}`}>
+        <button type="button" onClick={(event) => { event.stopPropagation(); onSelect(); }} aria-pressed={Boolean(active)} style={tint} title={caption ? `See: ${caption}` : undefined} className="inline-block cursor-pointer rounded-md transition hover:brightness-90 focus-visible:outline-2 focus-visible:outline-(--accent)">
           {number}
+          {caption && <span className="mt-1.5 block text-left text-[0.66rem] font-semibold uppercase leading-3.5 tracking-[0.06em] text-(--c-muted)">{caption}</span>}
         </button>
       ) : to ? (
         <Link to={to} style={tint} title={caption ? `See: ${caption}` : undefined} className="inline-block rounded-md underline decoration-blue-400 decoration-dotted decoration-2 underline-offset-[6px] transition hover:brightness-90 hover:decoration-solid focus-visible:outline-2 focus-visible:outline-(--accent)">
@@ -22,7 +24,7 @@ function Figure({ value, caption, to, onSelect, active, big, color }) {
       ) : (
         number
       )}
-      {caption && <span className="mt-1.5 block text-[0.66rem] font-semibold uppercase leading-3.5 tracking-[0.06em] text-(--c-muted)">{caption}</span>}
+      {!onSelect && caption && <span className="mt-1.5 block text-[0.66rem] font-semibold uppercase leading-3.5 tracking-[0.06em] text-(--c-muted)">{caption}</span>}
     </div>
   );
 }
@@ -57,7 +59,7 @@ function Split({ items }) {
  */
 function StatCards({ stats, loading }) {
   return (
-    <div className="stagger grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
+    <div className="stagger grid auto-rows-fr grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
       {stats.map(({ accent, label, parts, hint, to, split, onSelect, active }) => (
         <TiltCard key={label} accent={accent} to={loading ? undefined : to} onSelect={loading ? undefined : onSelect} active={active} label={label}>
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-(--c-muted)">

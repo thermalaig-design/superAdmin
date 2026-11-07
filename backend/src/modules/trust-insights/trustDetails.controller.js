@@ -3,8 +3,10 @@ import {
     deleteBankDetails,
     getBankDetails,
     getCompanyDetails,
+    getSubscription,
     saveBankDetails,
     saveCompanyDetails,
+    saveSubscription,
 } from './trustDetails.service.js';
 
 const handler = (label, work) => async (req, res) => {
@@ -27,3 +29,6 @@ export const removeBankDetails = handler('delete bank details', async (req) => {
 export const fetchCompanyDetails = handler('load company details', (req) => getCompanyDetails(req.params.trustId));
 export const putCompanyDetails = handler('save company details', (req) => saveCompanyDetails(req.params.trustId, req.body));
 export const removeCompanyDetails = handler('clear company details', (req) => clearCompanyDetails(req.params.trustId));
+
+export const fetchSubscription = handler('load subscription', (req) => getSubscription(req.params.trustId));
+export const putSubscription = handler('save subscription', (req) => saveSubscription(req.params.trustId, req.body?.subscription));

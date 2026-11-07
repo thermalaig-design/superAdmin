@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "../features/member-import/member-import.css";
+@import "../features/diwali/diwali.css";
 
 /*
  * Colours. Every colour in the app is one of these named values, so a theme is just a different set of values.

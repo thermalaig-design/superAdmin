@@ -27,6 +27,7 @@ const DEFAULT_PAGE_SIZE = 25;
 const SORT_CHOICES = [
   ['createdAt:desc', 'Newest first'],
   ['createdAt:asc', 'Oldest first'],
+  ['subscription:asc', 'Subscription (Free first)'],
   ['activityNumber:desc', 'Most user activity'],
   ['appActions:desc', 'Most app actions'],
   ['lastActivityAt:desc', 'Latest activity'],

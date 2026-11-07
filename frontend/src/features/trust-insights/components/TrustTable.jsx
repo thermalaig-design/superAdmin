@@ -28,7 +28,7 @@ function TrustTable({ trusts, loading, filter, sort, onSort, searching = false, 
         pinned ? 'lg:overflow-y-auto' : 'lg:overflow-y-hidden'
       }`}
     >
-      <table className={`w-full text-sm ${showExtra ? 'min-w-[1850px]' : 'min-w-[1150px]'}`}>
+      <table className={`w-full text-sm ${showExtra ? 'min-w-[1970px]' : 'min-w-[1270px]'}`}>
         <thead>
           <tr>
             {columns.map((c) =>
